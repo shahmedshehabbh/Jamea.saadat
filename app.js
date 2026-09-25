@@ -176,6 +176,16 @@ function renderArchive() {
 
 
 
+// ── تحويل روابط يوتيوب إلى صيغة Embed تلقائياً ──
+function getYouTubeEmbedUrl(url) {
+  if (!url) return '';
+  const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|live\/|shorts\/))([\w-]{11})/);
+  if (match && match[1]) {
+    return `https://www.youtube.com/embed/${match[1]}`;
+  }
+  return url;
+}
+
 // ── صفحة التفاصيل ──
 function showDetail(id) {
   const L = getLectures();
@@ -197,7 +207,8 @@ function showDetail(id) {
   const media = document.getElementById('detailMedia');
   if (x.videoUrl) {
     media.className = 'detail-media';
-    media.innerHTML = `<iframe src="${x.videoUrl}" frameborder="0" allowfullscreen allow="autoplay; encrypted-media"></iframe>`;
+    const embedUrl = getYouTubeEmbedUrl(x.videoUrl);
+    media.innerHTML = `<iframe src="${embedUrl}" frameborder="0" allowfullscreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"></iframe>`;
   } else if (x.audioUrl) {
     media.className = 'detail-media audio-only';
     media.innerHTML = `<div style="text-align:center"><div style="font-size:60px;margin-bottom:16px">🎧</div><p style="color:var(--green);font-weight:700;margin:0 0 16px">${x.title}</p><audio controls src="${x.audioUrl}"></audio></div>`;
