@@ -102,8 +102,13 @@ function toAr(n) {
 
 // ── بطاقة محاضرة ──
 function makeCard(x) {
-  const cls = x.type === 'مرئية' ? 'video' : x.type === 'صوتية' ? 'audio' : 'text';
-  const img = x.image || 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?auto=format&fit=crop&w=800&q=80';
+  const cls = x.type === 'الدرس' ? 'lesson' : x.type === 'مرئية' ? 'video' : x.type === 'صوتية' ? 'audio' : x.type === 'مقطع' ? 'clip' : 'text';
+  let img = x.image;
+  if (!img || img.includes('unsplash.com')) {
+    const ytThumb = getYouTubeThumbnail(x.videoUrl);
+    if (ytThumb) img = ytThumb;
+  }
+  img = img || 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?auto=format&fit=crop&w=800&q=80';
   return `
   <article class="card">
     <div class="thumb">
@@ -216,6 +221,26 @@ function getYouTubeEmbedUrl(url) {
   return url;
 }
 
+// ── استخراج صورة الغلاف تلقائياً من فيديو يوتيوب ──
+function getYouTubeThumbnail(url) {
+  if (!url) return '';
+  const match = url.match(/(?:youtu\.be\/|youtube\.com\/(?:embed\/|v\/|watch\?v=|watch\?.+&v=|live\/|shorts\/))([\w-]{11})/);
+  if (match && match[1]) {
+    return `https://img.youtube.com/vi/${match[1]}/hqdefault.jpg`;
+  }
+  return '';
+}
+
+// ── تحويل روابط SoundCloud إلى مشغل Embed ──
+function getSoundCloudEmbed(url) {
+  if (!url) return '';
+  if (url.includes('soundcloud.com')) {
+    const encoded = encodeURIComponent(url);
+    return `<iframe width="100%" height="166" scrolling="no" frameborder="no" allow="autoplay" src="https://w.soundcloud.com/player/?url=${encoded}&color=%231c4b3f&auto_play=false&hide_related=true&show_comments=false&show_user=true&show_reposts=false&show_teaser=false"></iframe>`;
+  }
+  return `<audio controls src="${url}" style="width:100%"></audio>`;
+}
+
 // ── دالة تحليل وتنسيق الملخص (Markdown & Tables Parser) ──
 function parseMarkdown(text) {
   if (!text) return '';
@@ -319,13 +344,34 @@ function showDetail(id) {
   $('#infoKeywords').textContent   = x.keywords || '—';
 
   const media = document.getElementById('detailMedia');
-  if (x.videoUrl) {
+  if (x.videoUrl && x.audioUrl) {
+    // المادة تحتوي على فيديو وصوت معاً (درس متكامل)
+    media.className = 'detail-media';
+    const embedUrl = getYouTubeEmbedUrl(x.videoUrl);
+    media.innerHTML = `
+      <div style="display:flex;flex-direction:column;width:100%;height:100%;">
+        <div style="flex:1;min-height:380px;">
+          <iframe src="${embedUrl}" frameborder="0" allowfullscreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" style="width:100%;height:100%;"></iframe>
+        </div>
+        <div style="background:#f4f9f6;padding:16px 20px;border-top:2px solid var(--gold);">
+          <div style="font-size:13px;font-weight:700;color:var(--green);margin-bottom:8px;display:flex;align-items:center;gap:6px;">
+            <span>🎧 الاستماع للتسجيل الصوتي (SoundCloud / Audio):</span>
+          </div>
+          ${getSoundCloudEmbed(x.audioUrl)}
+        </div>
+      </div>`;
+  } else if (x.videoUrl) {
     media.className = 'detail-media';
     const embedUrl = getYouTubeEmbedUrl(x.videoUrl);
     media.innerHTML = `<iframe src="${embedUrl}" frameborder="0" allowfullscreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"></iframe>`;
   } else if (x.audioUrl) {
     media.className = 'detail-media audio-only';
-    media.innerHTML = `<div style="text-align:center"><div style="font-size:60px;margin-bottom:16px">🎧</div><p style="color:var(--green);font-weight:700;margin:0 0 16px">${x.title}</p><audio controls src="${x.audioUrl}"></audio></div>`;
+    media.innerHTML = `
+      <div style="text-align:center;width:100%;max-width:550px;padding:20px;">
+        <div style="font-size:50px;margin-bottom:12px">🎧</div>
+        <p style="color:var(--green);font-weight:700;margin:0 0 16px">${x.title}</p>
+        ${getSoundCloudEmbed(x.audioUrl)}
+      </div>`;
   } else {
     media.className = 'detail-media';
     media.innerHTML = `<div style="display:grid;place-items:center;height:100%;color:#aaa;font-size:14px;background:#f5f5f5">⏳ لم يُرفع وسيط بعد</div>`;
@@ -333,8 +379,8 @@ function showDetail(id) {
 
   const actions = document.getElementById('mediaActions');
   actions.innerHTML = '';
-  if (x.videoUrl) actions.innerHTML += `<a href="${x.videoUrl}" target="_blank" class="btn-primary">🎬 مشاهدة</a>`;
-  if (x.audioUrl) actions.innerHTML += `<a href="${x.audioUrl}" target="_blank" class="btn-outline">⬇️ تحميل</a>`;
+  if (x.videoUrl) actions.innerHTML += `<a href="${x.videoUrl}" target="_blank" class="btn-primary">🎬 فتح في YouTube</a>`;
+  if (x.audioUrl) actions.innerHTML += `<a href="${x.audioUrl}" target="_blank" class="btn-outline">🎧 فتح في SoundCloud</a>`;
   actions.innerHTML += `<button type="button" class="btn-outline" style="border-color:var(--gold);color:var(--gold);cursor:pointer;" onclick="editLecture(${x.id})">✏️ تعديل المادة</button>`;
   actions.innerHTML += `<button type="button" class="btn-outline" style="border-color:#e53e3e;color:#e53e3e;cursor:pointer;" onclick="deleteLecture(${x.id})">🗑️ حذف</button>`;
 

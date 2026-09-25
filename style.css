@@ -180,9 +180,11 @@ img { max-width: 100%; display: block; }
   position: absolute; top: 12px; left: 12px;
   font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 20px;
 }
-.type-badge.video { background: #e53935; color: white; }
-.type-badge.audio { background: #1565c0; color: white; }
-.type-badge.text  { background: #6a1b9a; color: white; }
+.type-badge.lesson { background: var(--green); color: white; border: 1px solid var(--gold); }
+.type-badge.video  { background: #e53935; color: white; }
+.type-badge.audio  { background: #1565c0; color: white; }
+.type-badge.text   { background: #6a1b9a; color: white; }
+.type-badge.clip   { background: #d97706; color: white; }
 .card-body { padding: 20px; flex: 1; display: flex; flex-direction: column; }
 .card-body h3 { margin: 0 0 6px; font-size: 16px; line-height: 1.4; }
 .meta { color: var(--muted); font-size: 12px; margin-bottom: 10px; }

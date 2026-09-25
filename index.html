@@ -162,6 +162,7 @@
         </form>
         <select id="typeFilter">
           <option value="">كل الأنواع</option>
+          <option value="الدرس">الدروس الكاملة</option>
           <option value="مرئية">مرئية</option>
           <option value="صوتية">صوتية</option>
           <option value="نصية">نصية</option>
@@ -345,6 +346,7 @@
             <label>نوع المادة *</label>
             <select id="fType" required>
               <option value="">اختر النوع</option>
+              <option value="الدرس">📚 الدرس (مرئي / صوتي / متكامل)</option>
               <option value="مرئية">🎬 مرئية</option>
               <option value="صوتية">🎧 صوتية</option>
               <option value="نصية">📖 نصية</option>
@@ -378,16 +380,16 @@
             <textarea id="fPoints" rows="3" placeholder="النقطة الأولى&#10;النقطة الثانية&#10;النقطة الثالثة"></textarea>
           </div>
           <div class="field form-full">
-            <label>رابط الفيديو (YouTube embed أو رابط مباشر)</label>
-            <input type="url" id="fVideoUrl" placeholder="https://www.youtube.com/embed/VIDEO_ID">
+            <label>رابط الفيديو (YouTube - رابط عادي أو بث مباشر أو Shorts)</label>
+            <input type="url" id="fVideoUrl" placeholder="https://www.youtube.com/watch?v=... أو https://youtu.be/...">
           </div>
           <div class="field form-full">
-            <label>رابط الصوت (MP3 أو رابط مباشر)</label>
-            <input type="url" id="fAudioUrl" placeholder="https://example.com/lecture.mp3">
+            <label>رابط الصوت (SoundCloud أو MP3 مباشر)</label>
+            <input type="url" id="fAudioUrl" placeholder="https://soundcloud.com/... أو https://on.soundcloud.com/...">
           </div>
           <div class="field form-full">
-            <label>رابط الصورة المصغرة</label>
-            <input type="url" id="fImage" placeholder="https://images.unsplash.com/…">
+            <label>رابط الصورة المصغرة (اختياري - يتم جلبها تلقائياً من يوتيوب إن وُجد)</label>
+            <input type="url" id="fImage" placeholder="اتركه فارغاً ليتم استخدام غلاف يوتيوب تلقائياً...">
           </div>
           <div class="field form-full">
             <label>الكلمات المفتاحية</label>
