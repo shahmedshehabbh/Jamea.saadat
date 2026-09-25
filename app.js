@@ -186,6 +186,78 @@ function getYouTubeEmbedUrl(url) {
   return url;
 }
 
+// ── دالة تحليل وتنسيق الملخص (Markdown & Tables Parser) ──
+function parseMarkdown(text) {
+  if (!text) return '';
+  
+  // تحويل الجداول بنمط Markdown
+  const lines = text.split('\n');
+  let inTable = false;
+  let tableHtml = '';
+  let resultLines = [];
+
+  for (let i = 0; i < lines.length; i++) {
+    let line = lines[i].trim();
+    
+    // التحقق من سطر الجدول
+    if (line.startsWith('|') && line.endsWith('|')) {
+      const cells = line.split('|').slice(1, -1).map(c => c.trim());
+      
+      // سطر الفاصل |---|---|
+      if (cells.every(c => /^[-:]+$/.test(c))) {
+        continue;
+      }
+
+      if (!inTable) {
+        inTable = true;
+        tableHtml = '<div class="table-wrapper"><table class="detail-table"><thead><tr>';
+        cells.forEach(c => { tableHtml += `<th>${c}</th>`; });
+        tableHtml += '</tr></thead><tbody>';
+      } else {
+        tableHtml += '<tr>';
+        cells.forEach(c => { tableHtml += `<td>${c}</td>`; });
+        tableHtml += '</tr>';
+      }
+    } else {
+      if (inTable) {
+        inTable = false;
+        tableHtml += '</tbody></table></div>';
+        resultLines.push(tableHtml);
+        tableHtml = '';
+      }
+      resultLines.push(line);
+    }
+  }
+  if (inTable) {
+    tableHtml += '</tbody></table></div>';
+    resultLines.push(tableHtml);
+  }
+
+  let parsed = resultLines.join('\n');
+
+  // العناوين ## و ###
+  parsed = parsed.replace(/^### (.*$)/gim, '<h3>$1</h3>');
+  parsed = parsed.replace(/^## (.*$)/gim, '<h3>$1</h3>');
+  
+  // الخط العريض والمائل
+  parsed = parsed.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+  parsed = parsed.replace(/\*(.*?)\*/g, '<em>$1</em>');
+  
+  // الاقتباسات >
+  parsed = parsed.replace(/^> (.*$)/gim, '<blockquote>$1</blockquote>');
+
+  // تحويل الأسطر إلى فقرات
+  const blocks = parsed.split(/\n\n+/);
+  return blocks.map(b => {
+    b = b.trim();
+    if (!b) return '';
+    if (b.startsWith('<div class="table-wrapper"') || b.startsWith('<h3>') || b.startsWith('<blockquote>')) {
+      return b;
+    }
+    return `<p>${b.replace(/\n/g, '<br>')}</p>`;
+  }).join('');
+}
+
 // ── صفحة التفاصيل ──
 function showDetail(id) {
   const L = getLectures();
@@ -195,8 +267,20 @@ function showDetail(id) {
   $('#detailTitle').textContent    = x.title;
   $('#detailCategory').textContent = x.category;
   $('#detailMeta').textContent     = `${x.speaker} · ${x.date} · ${x.type} · ${x.duration}`;
-  $('#detailSummary').textContent  = x.summary || x.desc;
-  $('#detailPoints').innerHTML     = (x.points || []).map(p => `<li>${p}</li>`).join('');
+  
+  // عرض الملخص بتنسيق غني وجداول
+  const summaryContent = x.summary || x.desc || '';
+  const summaryEl = document.getElementById('detailSummary');
+  if (summaryEl) {
+    summaryEl.innerHTML = parseMarkdown(summaryContent);
+  }
+
+  const pointsEl = document.getElementById('detailPoints');
+  if (pointsEl) {
+    pointsEl.className = 'points-list';
+    pointsEl.innerHTML = (x.points || []).map(p => `<li>${p}</li>`).join('');
+  }
+
   $('#infoSpeaker').textContent    = x.speaker;
   $('#infoDate').textContent       = x.date;
   $('#infoCategory').textContent   = x.category;
