@@ -1,0 +1,408 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>شرح كتاب جامع السعادات</title>
+  <meta name="description" content="مكتبة رقمية للمحاضرات والدروس في شرح كتاب جامع السعادات">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Cairo:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ── Top Bar ── -->
+<div class="topbar">
+  <div class="shell">
+    <span>📚 مرحباً بكم في مكتبة جامع السعادات الرقمية</span>
+    <span>للتواصل: info@saadat.com</span>
+  </div>
+</div>
+
+<!-- ── Navigation ── -->
+<nav class="nav">
+  <div class="shell navin">
+    <div class="brand">
+      <div class="mark">س</div>
+      <div>
+        <strong>جامع السعادات</strong>
+        <span>مكتبة المحاضرات الرقمية</span>
+      </div>
+    </div>
+    <div class="links">
+      <a href="#" data-home>الرئيسية</a>
+      <a href="#" data-archive>المحاضرات</a>
+      <a href="#" data-page="speakers-page">المشايخ</a>
+      <a href="#" data-page="about-page">عن الكتاب</a>
+    </div>
+    <button class="nav-cta" data-archive>ابدأ التعلم</button>
+    <button class="menu" id="menuBtn" aria-label="القائمة">☰</button>
+  </div>
+</nav>
+
+<!-- ── Mobile Nav ── -->
+<div class="mobile-nav" id="mobileNav">
+  <button class="close-menu" id="closeMenu">✕</button>
+  <a href="#" data-home>الرئيسية</a>
+  <a href="#" data-archive>المحاضرات</a>
+  <a href="#" data-page="speakers-page">المشايخ</a>
+  <a href="#" data-page="about-page">عن الكتاب</a>
+</div>
+
+<!-- ══════════════ HOME ══════════════ -->
+<div class="home">
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="shell hero-grid">
+      <div>
+        <p class="eyebrow">✦ مكتبة رقمية متكاملة</p>
+        <h1>شرح كتاب<br><em>جامع السعادات</em></h1>
+        <p>محاضرات صوتية ومرئية ونصية في شرح الكتاب الجليل للعلامة المحقق النراقي — مرتّبة ومفهرسة لسهولة البحث والاستفادة.</p>
+        <form class="search" id="heroSearch">
+          <input type="text" placeholder="ابحث في المحاضرات، المواضيع، المشايخ…" aria-label="بحث">
+          <button type="submit">بحث 🔍</button>
+        </form>
+      </div>
+      <div class="hero-art">
+        <div class="pattern">﷽</div>
+        <img class="hero-photo"
+          src="https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=800&q=80"
+          alt="كتب إسلامية">
+        <div class="stamp">
+          <b id="totalCount">٠</b>
+          <span>محاضرة متاحة</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Quick Links -->
+  <section class="section" style="padding-top:0;padding-bottom:48px;background:var(--cream)">
+    <div class="shell">
+      <div class="quick">
+        <a href="#" data-type="مرئية"><span class="icon">🎬</span><span>محاضرات مرئية</span></a>
+        <a href="#" data-type="صوتية"><span class="icon">🎧</span><span>دروس صوتية</span></a>
+        <a href="#" data-type="نصية"><span class="icon">📖</span><span>مواد نصية</span></a>
+        <a href="#" data-type="مقطع"><span class="icon">✂️</span><span>مقاطع قصيرة</span></a>
+        <a href="#" data-archive><span class="icon">📂</span><span>الكل</span></a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Latest Lectures -->
+  <section class="section">
+    <div class="shell">
+      <div class="section-head">
+        <div>
+          <p class="eyebrow">✦ الأحدث</p>
+          <h2>آخر المحاضرات</h2>
+        </div>
+        <a class="view-all" href="#" data-archive>عرض الكل ←</a>
+      </div>
+      <div class="cards" id="latestCards"></div>
+    </div>
+  </section>
+
+  <!-- Stats Bar -->
+  <div class="stats-bar">
+    <div class="shell">
+      <div class="stats-grid">
+        <div class="stat-item"><b id="statTotal">٠</b><span>إجمالي المحاضرات</span></div>
+        <div class="stat-item"><b id="statVideo">٠</b><span>محاضرات مرئية</span></div>
+        <div class="stat-item"><b id="statAudio">٠</b><span>دروس صوتية</span></div>
+        <div class="stat-item"><b id="statSpeakers">٠</b><span>مشايخ وعلماء</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Feature -->
+  <section class="section tint">
+    <div class="shell">
+      <div class="feature">
+        <img src="https://images.unsplash.com/photo-1481627834876-b7833e8f5570?auto=format&fit=crop&w=800&q=80" alt="مكتبة">
+        <div class="feature-copy">
+          <p class="eyebrow" style="color:#e4bc70">✦ عن الكتاب</p>
+          <h2>جامع السعادات للنراقي</h2>
+          <p>كتاب جامع السعادات للعلامة المحقق المولى مهدي النراقي من أهم كتب الأخلاق الإسلامية، يتناول تهذيب النفس وعلاج رذائل الأخلاق وتحلية الإنسان بالفضائل.</p>
+          <a href="#" class="btn-gold" data-page="about-page">اقرأ المزيد ←</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Speakers -->
+  <section class="section">
+    <div class="shell">
+      <div class="section-head">
+        <div>
+          <p class="eyebrow">✦ العلماء والمشايخ</p>
+          <h2>أبرز الشارحين</h2>
+        </div>
+        <a class="view-all" href="#" data-page="speakers-page">عرض الكل ←</a>
+      </div>
+      <div class="speakers" id="speakersGrid"></div>
+    </div>
+  </section>
+
+</div><!-- /home -->
+
+<!-- ══════════════ ARCHIVE PAGE ══════════════ -->
+<div class="section-page" id="archive">
+  <section class="section" style="padding-top:40px">
+    <div class="shell">
+      <div class="section-head">
+        <div><p class="eyebrow">✦ المكتبة الكاملة</p><h2>جميع المحاضرات والمواد</h2></div>
+      </div>
+      <div class="archive-tools">
+        <form class="search" id="archiveSearch" style="flex:1;max-width:none">
+          <input type="text" placeholder="ابحث بالعنوان أو الشيخ أو الموضوع…">
+          <button type="submit">بحث</button>
+        </form>
+        <select id="typeFilter">
+          <option value="">كل الأنواع</option>
+          <option value="مرئية">مرئية</option>
+          <option value="صوتية">صوتية</option>
+          <option value="نصية">نصية</option>
+          <option value="مقطع">مقاطع قصيرة</option>
+        </select>
+        <select id="categoryFilter">
+          <option value="">كل الفصول</option>
+          <option value="مقدمة">مقدمة الكتاب</option>
+          <option value="شرح جامع السعادات">شرح جامع السعادات</option>
+          <option value="الفضائل">الفضائل الأخلاقية</option>
+          <option value="الرذائل">علاج الرذائل</option>
+        </select>
+        <select id="sortFilter">
+          <option value="newest">الأحدث أولاً</option>
+          <option value="oldest">الأقدم أولاً</option>
+        </select>
+      </div>
+      <div class="filter-tags" id="filterTags" style="margin-bottom:16px">
+        <button class="filter-tag active" data-tag="">الكل</button>
+        <button class="filter-tag" data-tag="مرئية">🎬 مرئية</button>
+        <button class="filter-tag" data-tag="صوتية">🎧 صوتية</button>
+        <button class="filter-tag" data-tag="نصية">📖 نصية</button>
+        <button class="filter-tag" data-tag="مقطع">✂️ مقاطع</button>
+      </div>
+      <div class="sort-bar">
+        <span class="results-count" id="resultsCount"></span>
+      </div>
+      <div class="cards" id="archiveCards"></div>
+      <div class="pagination" id="pagination"></div>
+    </div>
+  </section>
+</div>
+
+<!-- ══════════════ DETAIL PAGE ══════════════ -->
+<div class="section-page" id="detail">
+  <section class="section" style="padding-top:40px">
+    <div class="shell">
+      <a href="#" class="btn-outline" data-archive style="display:inline-flex;align-items:center;gap:6px;margin-bottom:20px">→ العودة للمحاضرات</a>
+      <div class="detail-head">
+        <p class="eyebrow" id="detailCategory"></p>
+        <h1 id="detailTitle"></h1>
+        <p class="meta" id="detailMeta"></p>
+      </div>
+      <div class="detail-grid">
+        <div class="detail-main">
+          <div class="detail-media" id="detailMedia">
+            <div style="display:grid;place-items:center;height:100%;color:#aaa;font-size:14px">لم يُرفع وسيط بعد</div>
+          </div>
+          <div class="detail-body">
+            <h3>ملخص المحاضرة</h3>
+            <p id="detailSummary"></p>
+            <h3>أبرز النقاط</h3>
+            <ul id="detailPoints"></ul>
+            <div class="media-actions" id="mediaActions"></div>
+          </div>
+        </div>
+        <div class="detail-side">
+          <div class="info-box">
+            <h4>📋 تفاصيل المادة</h4>
+            <div class="info-row"><span>المحاضر</span><span id="infoSpeaker"></span></div>
+            <div class="info-row"><span>التاريخ</span><span id="infoDate"></span></div>
+            <div class="info-row"><span>التصنيف</span><span id="infoCategory"></span></div>
+            <div class="info-row"><span>المدة</span><span id="infoDuration"></span></div>
+            <div class="info-row"><span>النوع</span><span id="infoType"></span></div>
+            <div class="info-row"><span>الكلمات المفتاحية</span><span id="infoKeywords" style="font-size:11px;color:var(--muted)"></span></div>
+          </div>
+          <div class="info-box">
+            <h4>📌 محاضرات ذات صلة</h4>
+            <div class="related-list" id="relatedList"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+
+<!-- ══════════════ SPEAKERS PAGE ══════════════ -->
+<div class="section-page" id="speakers-page">
+  <section class="section" style="padding-top:40px">
+    <div class="shell">
+      <div class="section-head">
+        <div><p class="eyebrow">✦ المشايخ والعلماء</p><h2>الشارحون لكتاب جامع السعادات</h2></div>
+      </div>
+      <div class="speakers" id="allSpeakersGrid"></div>
+    </div>
+  </section>
+</div>
+
+<!-- ══════════════ ABOUT PAGE ══════════════ -->
+<div class="section-page" id="about-page">
+  <section class="section" style="padding-top:40px">
+    <div class="shell" style="max-width:820px">
+      <p class="eyebrow">✦ التعريف بالكتاب</p>
+      <h2 style="font:700 34px 'Cairo',sans-serif;margin:10px 0 24px">كتاب جامع السعادات</h2>
+      <div style="line-height:2;color:#4a5c56;font-size:16px">
+        <p><strong>المؤلف:</strong> العلامة المحقق المولى مهدي النراقي (١١٢٨ - ١٢٠٩ هـ)</p>
+        <p>كتاب <em>جامع السعادات</em> من أجمع كتب الأخلاق الإسلامية، يقع في ثلاثة أجزاء يتناول فيها المؤلف علم الأخلاق بمنهج فلسفي تحليلي دقيق، مستنيراً بالقرآن الكريم والسنة الشريفة.</p>
+        <p><strong>محاور الكتاب الرئيسية:</strong></p>
+        <ul style="padding-right:20px">
+          <li>تعريف علم الأخلاق وموضوعه وأهميته</li>
+          <li>القوى النفسية الثلاث: العقلية والغضبية والشهوية</li>
+          <li>الفضائل الأخلاقية الأربع: الحكمة والشجاعة والعفة والعدالة</li>
+          <li>الرذائل الأخلاقية وطرق معالجتها</li>
+          <li>السلوك العملي نحو كمال النفس</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- ══════════════ FOOTER ══════════════ -->
+<footer class="footer">
+  <div class="shell">
+    <div class="footer-grid">
+      <div>
+        <div style="display:flex;align-items:center;gap:11px;margin-bottom:16px">
+          <div class="mark">س</div>
+          <div><strong style="color:white;font-size:16px">جامع السعادات</strong><br><span style="font-size:11px">مكتبة المحاضرات الرقمية</span></div>
+        </div>
+        <p style="font-size:13px;max-width:280px">مكتبة رقمية متكاملة تجمع محاضرات وشروحات كتاب جامع السعادات.</p>
+      </div>
+      <div>
+        <h5>روابط سريعة</h5>
+        <ul>
+          <li><a href="#" data-home>الرئيسية</a></li>
+          <li><a href="#" data-archive>المحاضرات</a></li>
+          <li><a href="#" data-page="speakers-page">المشايخ</a></li>
+          <li><a href="#" data-page="about-page">عن الكتاب</a></li>
+        </ul>
+      </div>
+      <div>
+        <h5>أنواع المواد</h5>
+        <ul>
+          <li><a href="#" data-type="مرئية">🎬 المرئيات</a></li>
+          <li><a href="#" data-type="صوتية">🎧 الصوتيات</a></li>
+          <li><a href="#" data-type="نصية">📖 النصوص</a></li>
+          <li><a href="#" data-type="مقطع">✂️ المقاطع</a></li>
+        </ul>
+      </div>
+      <div>
+        <h5>تواصل معنا</h5>
+        <ul><li>📧 info@saadat.com</li></ul>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <span>© ١٤٤٨ هـ — جامع السعادات. جميع الحقوق محفوظة.</span>
+      <span>بُني بمحبة لنشر العلم ✦</span>
+    </div>
+  </div>
+</footer>
+
+<!-- ══════════════ ADMIN BUTTON ══════════════ -->
+<button class="admin-toggle" id="adminToggle" title="إضافة مادة جديدة">＋</button>
+<div class="toast" id="toast"></div>
+
+<!-- ══════════════ ADMIN MODAL ══════════════ -->
+<div class="admin-overlay" id="adminOverlay">
+  <div class="admin-modal">
+    <div class="admin-modal-head">
+      <h3>➕ إضافة مادة جديدة</h3>
+      <button class="close-admin" id="closeAdmin">✕</button>
+    </div>
+    <div class="admin-modal-body">
+      <form id="adminForm">
+        <div class="form-grid">
+          <div class="field form-full">
+            <label>عنوان المادة *</label>
+            <input type="text" id="fTitle" placeholder="مثال: شرح مقدمة جامع السعادات - الدرس الأول" required>
+          </div>
+          <div class="field">
+            <label>الشيخ / المحاضر *</label>
+            <input type="text" id="fSpeaker" placeholder="اسم الشيخ أو المحاضر" required>
+          </div>
+          <div class="field">
+            <label>التاريخ</label>
+            <input type="text" id="fDate" placeholder="مثال: ١ محرم ١٤٤٨">
+          </div>
+          <div class="field">
+            <label>نوع المادة *</label>
+            <select id="fType" required>
+              <option value="">اختر النوع</option>
+              <option value="مرئية">🎬 مرئية</option>
+              <option value="صوتية">🎧 صوتية</option>
+              <option value="نصية">📖 نصية</option>
+              <option value="مقطع">✂️ مقطع قصير</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>التصنيف / الفصل</label>
+            <input type="text" id="fCategory" placeholder="مثال: شرح جامع السعادات" list="categoryList">
+            <datalist id="categoryList">
+              <option value="مقدمة الكتاب">
+              <option value="شرح جامع السعادات">
+              <option value="الفضائل الأخلاقية">
+              <option value="علاج الرذائل">
+            </datalist>
+          </div>
+          <div class="field">
+            <label>المدة</label>
+            <input type="text" id="fDuration" placeholder="مثال: ٤٥ دقيقة">
+          </div>
+          <div class="field form-full">
+            <label>وصف مختصر *</label>
+            <textarea id="fDesc" rows="2" placeholder="وصف قصير يظهر في بطاقة المحاضرة…" required></textarea>
+          </div>
+          <div class="field form-full">
+            <label>الملخص الكامل</label>
+            <textarea id="fSummary" rows="3" placeholder="ملخص تفصيلي للمحاضرة…"></textarea>
+          </div>
+          <div class="field form-full">
+            <label>أبرز النقاط (كل نقطة في سطر منفصل)</label>
+            <textarea id="fPoints" rows="3" placeholder="النقطة الأولى&#10;النقطة الثانية&#10;النقطة الثالثة"></textarea>
+          </div>
+          <div class="field form-full">
+            <label>رابط الفيديو (YouTube embed أو رابط مباشر)</label>
+            <input type="url" id="fVideoUrl" placeholder="https://www.youtube.com/embed/VIDEO_ID">
+          </div>
+          <div class="field form-full">
+            <label>رابط الصوت (MP3 أو رابط مباشر)</label>
+            <input type="url" id="fAudioUrl" placeholder="https://example.com/lecture.mp3">
+          </div>
+          <div class="field form-full">
+            <label>رابط الصورة المصغرة</label>
+            <input type="url" id="fImage" placeholder="https://images.unsplash.com/…">
+          </div>
+          <div class="field form-full">
+            <label>الكلمات المفتاحية</label>
+            <input type="text" id="fKeywords" placeholder="جامع السعادات، أخلاق، نفس">
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn-primary">💾 حفظ المادة</button>
+          <button type="button" class="btn-outline" id="cancelAdmin">إلغاء</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
+
