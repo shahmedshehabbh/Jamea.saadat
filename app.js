@@ -335,6 +335,8 @@ function showDetail(id) {
   actions.innerHTML = '';
   if (x.videoUrl) actions.innerHTML += `<a href="${x.videoUrl}" target="_blank" class="btn-primary">🎬 مشاهدة</a>`;
   if (x.audioUrl) actions.innerHTML += `<a href="${x.audioUrl}" target="_blank" class="btn-outline">⬇️ تحميل</a>`;
+  actions.innerHTML += `<button type="button" class="btn-outline" style="border-color:var(--gold);color:var(--gold);cursor:pointer;" onclick="editLecture(${x.id})">✏️ تعديل المادة</button>`;
+  actions.innerHTML += `<button type="button" class="btn-outline" style="border-color:#e53e3e;color:#e53e3e;cursor:pointer;" onclick="deleteLecture(${x.id})">🗑️ حذف</button>`;
 
   const related = L.filter(l => l.id !== x.id && (l.category === x.category || l.speaker === x.speaker)).slice(0, 4);
   const rl = document.getElementById('relatedList');
@@ -361,6 +363,13 @@ function showToast(msg, dur = 3000) {
 
 function openAdmin()  { 
   console.log('✅ openAdmin() called');
+  const modalTitle = document.getElementById('adminModalTitle');
+  if (modalTitle) modalTitle.textContent = '➕ إضافة مادة جديدة';
+  const editIdInput = document.getElementById('fEditId');
+  if (editIdInput) editIdInput.value = '';
+  const form = document.getElementById('adminForm');
+  if (form) form.reset();
+
   const overlay = document.getElementById('adminOverlay');
   console.log('Overlay element:', overlay);
   if (overlay) {
@@ -369,6 +378,50 @@ function openAdmin()  {
   } else {
     console.error('❌ adminOverlay not found!');
   }
+}
+
+function editLecture(id) {
+  const L = getLectures();
+  const x = L.find(l => l.id === Number(id));
+  if (!x) return;
+
+  const setVal = (fid, val) => {
+    const el = document.getElementById(fid);
+    if (el) el.value = val || '';
+  };
+
+  setVal('fEditId', x.id);
+  setVal('fTitle', x.title);
+  setVal('fSpeaker', x.speaker);
+  setVal('fDate', x.date);
+  setVal('fCategory', x.category);
+  setVal('fType', x.type);
+  setVal('fDuration', x.duration);
+  setVal('fImage', x.image);
+  setVal('fDesc', x.desc);
+  setVal('fSummary', x.summary || x.desc);
+  setVal('fPoints', (x.points || []).join('\n'));
+  setVal('fKeywords', x.keywords);
+  setVal('fVideoUrl', x.videoUrl);
+  setVal('fAudioUrl', x.audioUrl);
+
+  const modalTitle = document.getElementById('adminModalTitle');
+  if (modalTitle) modalTitle.textContent = '✏️ تعديل مادة: ' + x.title;
+
+  const overlay = document.getElementById('adminOverlay');
+  if (overlay) overlay.classList.add('open');
+}
+
+function deleteLecture(id) {
+  if (!confirm('هل أنت متأكد من رغبتك في حذف هذه المحاضرة نهائياً؟')) return;
+  let L = getLectures();
+  L = L.filter(l => l.id !== Number(id));
+  saveLectures(L);
+  showToast('🗑️ تم حذف المحاضرة بنجاح');
+  show('home');
+  updateStats();
+  renderLatest();
+  renderArchive();
 }
 
 function closeAdmin() { 
@@ -422,26 +475,56 @@ function initializeApp() {
     adminForm.addEventListener('submit', e => {
       e.preventDefault();
       const v = id => document.getElementById(id).value.trim();
-      const L = getLectures();
-      const newId = L.length ? Math.max(...L.map(l => l.id)) + 1 : 1;
+      let L = getLectures();
+      const editId = v('fEditId');
 
-      const newLecture = {
-        id: newId, title: v('fTitle'), speaker: v('fSpeaker'),
-        date: v('fDate') || new Date().toLocaleDateString('ar-SA'),
-        category: v('fCategory') || 'شرح جامع السعادات',
-        type: v('fType'), duration: v('fDuration') || '—',
-        image: v('fImage') || 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?auto=format&fit=crop&w=800&q=80',
-        desc: v('fDesc'), summary: v('fSummary') || v('fDesc'),
-        points: v('fPoints').split('\n').filter(Boolean),
-        keywords: v('fKeywords'), videoUrl: v('fVideoUrl'), audioUrl: v('fAudioUrl')
-      };
+      if (editId) {
+        // تعديل مادة موجودة
+        const index = L.findIndex(l => l.id === Number(editId));
+        if (index !== -1) {
+          L[index] = {
+            ...L[index],
+            title: v('fTitle'),
+            speaker: v('fSpeaker'),
+            date: v('fDate') || L[index].date,
+            category: v('fCategory') || L[index].category,
+            type: v('fType'),
+            duration: v('fDuration') || L[index].duration,
+            image: v('fImage') || L[index].image,
+            desc: v('fDesc'),
+            summary: v('fSummary') || v('fDesc'),
+            points: v('fPoints').split('\n').filter(Boolean),
+            keywords: v('fKeywords'),
+            videoUrl: v('fVideoUrl'),
+            audioUrl: v('fAudioUrl')
+          };
+          saveLectures(L);
+          showToast('✏️ تم تعديل المادة بنجاح!');
+          showDetail(editId);
+        }
+      } else {
+        // إضافة مادة جديدة
+        const newId = L.length ? Math.max(...L.map(l => l.id)) + 1 : 1;
+        const newLecture = {
+          id: newId, title: v('fTitle'), speaker: v('fSpeaker'),
+          date: v('fDate') || new Date().toLocaleDateString('ar-SA'),
+          category: v('fCategory') || 'شرح جامع السعادات',
+          type: v('fType'), duration: v('fDuration') || '—',
+          image: v('fImage') || 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?auto=format&fit=crop&w=800&q=80',
+          desc: v('fDesc'), summary: v('fSummary') || v('fDesc'),
+          points: v('fPoints').split('\n').filter(Boolean),
+          keywords: v('fKeywords'), videoUrl: v('fVideoUrl'), audioUrl: v('fAudioUrl')
+        };
+        L.unshift(newLecture);
+        saveLectures(L);
+        showToast('✅ تم حفظ المادة بنجاح!');
+      }
 
-      L.unshift(newLecture);
-      saveLectures(L);
       e.target.reset();
       closeAdmin();
-      updateStats(); renderLatest(); renderArchive();
-      showToast('✅ تم حفظ المادة بنجاح!');
+      updateStats();
+      renderLatest();
+      renderArchive();
     });
   }
 

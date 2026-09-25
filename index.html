@@ -322,11 +322,12 @@
 <div class="admin-overlay" id="adminOverlay">
   <div class="admin-modal">
     <div class="admin-modal-head">
-      <h3>➕ إضافة مادة جديدة</h3>
+      <h3 id="adminModalTitle">➕ إضافة مادة جديدة</h3>
       <button class="close-admin" id="closeAdmin">✕</button>
     </div>
     <div class="admin-modal-body">
       <form id="adminForm">
+        <input type="hidden" id="fEditId" value="">
         <div class="form-grid">
           <div class="field form-full">
             <label>عنوان المادة *</label>
