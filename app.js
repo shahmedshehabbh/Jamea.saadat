@@ -530,8 +530,23 @@ function showDetail(id, viewMode = '') {
 
   const actions = document.getElementById('mediaActions');
   actions.innerHTML = '';
-  if (x.videoUrl) actions.innerHTML += `<a href="${x.videoUrl}" target="_blank" class="btn-primary">🎬 فتح في YouTube</a>`;
-  if (x.audioUrl) actions.innerHTML += `<a href="${x.audioUrl}" target="_blank" class="btn-outline">🎧 فتح في SoundCloud</a>`;
+  
+  if (x.videoUrl) {
+    actions.innerHTML += `
+      <a href="${x.videoUrl}" target="_blank" class="btn-action-link btn-action-yt" title="مشاهدة على YouTube">
+        <svg viewBox="0 0 24 24"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+        <span>مشاهدة الدرس على YouTube</span>
+      </a>`;
+  }
+  
+  if (x.audioUrl) {
+    actions.innerHTML += `
+      <a href="${x.audioUrl}" target="_blank" class="btn-action-link btn-action-sc" title="استماع على SoundCloud">
+        <svg viewBox="0 0 24 24"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
+        <span>الاستماع للتسجيل الصوتي</span>
+      </a>`;
+  }
+
   actions.innerHTML += `<button type="button" class="btn-outline admin-only" style="border-color:var(--gold);color:var(--gold);cursor:pointer;" onclick="editLecture(${x.id})">✏️ تعديل المادة</button>`;
   actions.innerHTML += `<button type="button" class="btn-outline admin-only" style="border-color:#e53e3e;color:#e53e3e;cursor:pointer;" onclick="deleteLecture(${x.id})">🗑️ حذف</button>`;
 
