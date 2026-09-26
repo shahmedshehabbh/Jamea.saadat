@@ -102,26 +102,40 @@ function toAr(n) {
 
 // ── بطاقة محاضرة ──
 function makeCard(x) {
-  const cls = x.type === 'الدرس' ? 'lesson' : x.type === 'مرئية' ? 'video' : x.type === 'صوتية' ? 'audio' : x.type === 'مقطع' ? 'clip' : 'text';
+  const currentFilter = document.getElementById('typeFilter')?.value || '';
+  
+  // تحديد النوع والوسم الظاهر بحسب السياق
+  let displayType = x.type;
+  let cls = x.type === 'الدرس' ? 'lesson' : x.type === 'مرئية' ? 'video' : x.type === 'صوتية' ? 'audio' : x.type === 'مقطع' ? 'clip' : 'text';
+  
+  if (currentFilter === 'مرئية' && x.videoUrl) {
+    displayType = 'مرئية';
+    cls = 'video';
+  } else if (currentFilter === 'صوتية' && x.audioUrl) {
+    displayType = 'صوتية';
+    cls = 'audio';
+  }
+
   let img = x.image;
   if (!img || img.includes('unsplash.com')) {
     const ytThumb = getYouTubeThumbnail(x.videoUrl);
     if (ytThumb) img = ytThumb;
   }
   img = img || 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?auto=format&fit=crop&w=800&q=80';
+  
   return `
   <article class="card">
     <div class="thumb">
       <img src="${img}" alt="${x.title}" loading="lazy" onerror="this.src='https://images.unsplash.com/photo-1481627834876-b7833e8f5570?auto=format&fit=crop&w=800&q=80'">
       <span class="tag">${x.category || 'عام'}</span>
-      <span class="type-badge ${cls}">${x.type}</span>
+      <span class="type-badge ${cls}">${displayType}</span>
     </div>
     <div class="card-body">
       <h3>${x.title}</h3>
       <div class="meta">${x.speaker} · ${x.date}</div>
       <p class="desc">${x.desc}</p>
       <div class="card-foot">
-        <button class="watch" data-detail="${x.id}">عرض المحاضرة ←</button>
+        <button class="watch" data-detail="${x.id}" data-viewmode="${currentFilter}">عرض المحاضرة ←</button>
       </div>
     </div>
   </article>`;
@@ -329,14 +343,18 @@ function parseMarkdown(text) {
 }
 
 // ── صفحة التفاصيل ──
-function showDetail(id) {
+function showDetail(id, viewMode = '') {
   const L = getLectures();
   const x = L.find(l => l.id === Number(id));
   if (!x) return;
+  
+  // إذا تم تحديد نمط عرض صريح (مثلاً تصفح من القسم الصوتي أو المرئي)
+  const effectiveType = viewMode === 'مرئية' ? 'مرئية' : viewMode === 'صوتية' ? 'صوتية' : x.type;
+
   const $ = sel => document.querySelector(sel);
   $('#detailTitle').textContent    = x.title;
   $('#detailCategory').textContent = x.category;
-  $('#detailMeta').textContent     = `${x.speaker} · ${x.date} · ${x.type} · ${x.duration}`;
+  $('#detailMeta').textContent     = `${x.speaker} · ${x.date} · ${effectiveType} · ${x.duration}`;
   
   // عرض الملخص بتنسيق غني وجداول
   const summaryContent = x.summary || x.desc || '';
@@ -355,12 +373,28 @@ function showDetail(id) {
   $('#infoDate').textContent       = x.date;
   $('#infoCategory').textContent   = x.category;
   $('#infoDuration').textContent   = x.duration;
-  $('#infoType').textContent       = x.type;
+  $('#infoType').textContent       = effectiveType;
   $('#infoKeywords').textContent   = x.keywords || '—';
 
   const media = document.getElementById('detailMedia');
-  if (x.videoUrl && x.audioUrl) {
-    // المادة تحتوي على فيديو وصوت معاً (درس متكامل)
+  
+  // تحديد الوسيط المعروض بدقة بحسب السياق:
+  if (viewMode === 'مرئية' && x.videoUrl) {
+    // الزائر قادم من القسم المرئي -> عرض الفيديو فقط
+    media.className = 'detail-media';
+    const embedUrl = getYouTubeEmbedUrl(x.videoUrl);
+    media.innerHTML = `<iframe src="${embedUrl}" frameborder="0" allowfullscreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"></iframe>`;
+  } else if (viewMode === 'صوتية' && x.audioUrl) {
+    // الزائر قادم من القسم الصوتي -> عرض مشغل الصوت فقط
+    media.className = 'detail-media audio-only';
+    media.innerHTML = `
+      <div style="text-align:center;width:100%;max-width:550px;padding:20px;">
+        <div style="font-size:50px;margin-bottom:12px">🎧</div>
+        <p style="color:var(--green);font-weight:700;margin:0 0 16px">${x.title}</p>
+        ${getSoundCloudEmbed(x.audioUrl)}
+      </div>`;
+  } else if (x.videoUrl && x.audioUrl) {
+    // المادة تحتوي على فيديو وصوت معاً ومعروضة من الأرشيف العام أو كدرس شامل
     media.className = 'detail-media';
     const embedUrl = getYouTubeEmbedUrl(x.videoUrl);
     media.innerHTML = `
@@ -622,7 +656,11 @@ function initializeApp() {
   // Event Delegation
   document.addEventListener('click', e => {
     const detailBtn = e.target.closest('[data-detail]');
-    if (detailBtn) { e.preventDefault(); showDetail(detailBtn.dataset.detail); return; }
+    if (detailBtn) { 
+      e.preventDefault(); 
+      showDetail(detailBtn.dataset.detail, detailBtn.dataset.viewmode || ''); 
+      return; 
+    }
     const pageLink = e.target.closest('[data-page]');
     if (pageLink) { e.preventDefault(); show(pageLink.dataset.page); return; }
     const typeLink = e.target.closest('[data-type]');
