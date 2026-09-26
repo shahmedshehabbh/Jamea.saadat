@@ -438,8 +438,8 @@ function requireAdminAuth(callback) {
   const password = prompt('🔒 لوحة الإدارة محمية\nيرجى إدخال كلمة مرور المشرف (Admin Password):');
   if (!password) return;
 
-  // كلمة المرور الافتراضية
-  if (password === '123456' || password === 'admin' || password === 'saadat2026') {
+  // كلمة المرور للمشرف
+  if (password === '222666') {
     sessionStorage.setItem(ADMIN_STORAGE_KEY, 'true');
     showToast('🔓 مرحباً بك أيها المشرف');
     if (callback) callback();
