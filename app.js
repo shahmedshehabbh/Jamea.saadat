@@ -164,20 +164,122 @@ function renderLatest() {
   el.innerHTML = getLectures().slice(0, 3).map(makeCard).join('');
 }
 
-// ── المشايخ ──
+// ── قاعدة بيانات المشايخ والعلماء (Speakers Directory) ──
+const SPEAKERS_DATA = {
+  'الشيخ أحمد الشهابي': {
+    name: 'سماحة الشَّيْخُ أَحْمَدُ الشَّهَابِيُ (حفظه الله)',
+    photo: 'https://lh3.googleusercontent.com/d/1FIJreLO0ClW6ksKZcelBmd6UjTVANaCb',
+    title: 'أستاذ الحوزة العلمية ومفسر القرآن الكريم',
+    origin: 'البحرين - الدراز',
+    sections: [
+      {
+        title: '📜 النَّسَبُ الشَّرِيفُ وَالوِلَادَةُ',
+        content: `هُوَ الشَّيْخُ أَحْمَدُ بِنْ الحَاجُّ عَلِيٌّ بِنْ الحَاجُّ أَحْمَدُ بِنْ مُحَمَّدٌ بِنْ... آلُ شِهَابَ البحراني.<br><br>وُلِدَ فِي <strong>١٤ رَجَبِ ١٣٨٠ هِجْرِي (١٩٦١ م)</strong> فِي قَرْيَةِ الدِّرَازِ بِالبَحْرَيْنِ.`
+      },
+      {
+        title: '🎓 الدِّرَاسَةُ الأَكَادِيمِيَّةُ',
+        content: `اِلْتَحَقَ بِالتَّعْلِيمِ النِّظَامِيِّ سَنَةَ <strong>١٩٦٨ م</strong>، وَأَنْهَى مَرْحَلَةَ التَّعْلِيمِ الأَسَاسِيِّ وَالثَّانَوِيِّ فِي <strong>١٩٨٠ م</strong>.. ثُمَّ وَاصَلَ تَعْلِيمَهُ الجَامِعِيَّ وَاِلْتَحَقَ بِكُلِّيَّةِ العُلُومِ الصِّحِّيَّةِ (قَسْمُ الأَجْهِزَةِ الدَّقِيقَةِ).`
+      },
+      {
+        title: '📖 الدِّرَاسَةُ الدِّينِيَّةُ وَالمُيُولُ المُبَكِّرَةُ',
+        content: `كَانَتْ لَهُ مُيُولٌ لِدِرَاسَةِ العُلُومِ الدِّينِيَّةِ فِي سِنٍّ مُبَكِّرَةٍ، فَدَرَسَ فِي نِهَايَةِ السَّبْعِينَاتِ عَلَى يَدِ:`,
+        bullets: [
+          'العَلَّامَةِ الشَّيْخِ عَبْدِالمُحْسِنِ الشَّهَابِيِّ (رَحِمَهُ الله).',
+          'سَمَاحَةِ آيَةِ اللهِ الشَّيْخِ عِيسَى أَحْمَدَ قَاسِمَ (حَفِظَهُ الله).'
+        ]
+      },
+      {
+        title: '🕌 الدِّرَاسَةُ فِي الجُمْهُورِيَّةِ الإِسْلَامِيَّةِ الإِيرَانِيَّةِ (١٩٨١ م)',
+        content: `تَوَجَّهَ سَمَاحَتُهُ لِلجُمْهُورِيَّةِ الإِسْلَامِيَّةِ فِي سَنَةِ <strong>١٩٨١ م</strong> وَلَهُ مِنَ العُمْرِ عِشْرُونَ عَامًا، وَانْتَظَمَ حِينَهَا لِمَدْرَسَةِ (دَارِ الحِكْمَةِ) التَّابِعَةِ لِآيَةِ اللهِ السَّيِّدِ مُحَمَّد بَاقِر الحَكِيم (أَعْلَى اللهُ مَقَامَهُ) وَالَّتِي هِيَ الآنَ بِإِشْرَافِ السَّيِّدِ عَمَّار الحَكِيم (حَفِظَهُ الله):`,
+        bullets: [
+          '<strong>دِرَاسَةُ الفِقْهِ:</strong> عَلَى يَدِ مُحَمَّد التَّرْحِينِيِّ، وَالشَّيْخِ بَاقِرِ الإِيرَوَانِيِّ. كَمَا حَضَرَ لِآيَةِ اللهِ السَّيِّدِ مَحْمُود الهَاشِمِيِّ (حَفِظَهُ الله)، وَآيَةِ اللهِ السَّيِّدِ كَاظِمِ الحَائِرِيِّ (حَفِظَهُ الله) وَآخَرِينَ.',
+          '<strong>أُصُولُ الفِقْهِ:</strong> دَرَسَهَا عَلَى يَدِ الشَّيْخِ بَاقِرِ الإِيرَوَانِيِّ، وَالشَّيْخِ حُسَيْن نَجَاتِي.',
+          '<strong>الفَلْسَفَةُ وَالعُلُومُ العَقْلِيَّةُ:</strong> دَرَسَ بِدَايَاتِ الفَلْسَفَةِ مَعَ سَمَاحَةِ السَّيِّدِ كَمَالِ الحَيْدَرِيِّ (حَفِظَهُ الله) وَالأُسْتَاذِ الشَّيْخِ حَسَن رَمَضَان (حَفِظَهُ الله)، ثُمَّ تَابَعَ دَرْسَ الأَسْفَارِ لِآيَةِ اللهِ الشَّيْخِ جَوَادِي آمُلِي (حَفِظَهُ الله) عَنْ طَرِيقِ أَشْرِطَةِ الكَاسِيتِ.',
+          '<strong>التَّدْرِيسُ وَالتَّبْلِيغُ:</strong> بَدَأَ بِالتَّدْرِيسِ فِي نِهَايَةِ الثَّمَانِينَاتِ لِلعُلُومِ العَقْلِيَّةِ وَالتَّفْسِيرِ، وَكَانَتْ لَهُ نَشَاطَاتٌ تَبْلِيغِيَّةٌ حَيْثُ ابْتُعِثَ لِلُبْنَانَ سَنَةَ ١٩٨٦ م وَمَنَاطِقَ دَاخِلَ إِيرَانَ.'
+        ]
+      },
+      {
+        title: '🇧🇭 العَوْدَةُ إِلَى البِلَادِ (٢٠٠١ م)',
+        content: `وَبَعْدَ رِحْلَةٍ عِلْمِيَّةٍ طَالَتْ <strong>٢٠ سَنَةً</strong>، عَادَ لِوَطَنِهِ البَحْرَيْنِ فِي سَنَةِ <strong>٢٠٠١ م</strong>، وَالْتَحَقَ بِحَوْزَةِ (زَيْنِ العَابِدِينَ) بِقَرْيَةِ بَنِي جَمْرَة التَّابِعَةِ لِسَمَاحَةِ الشَّيْخِ عَبْدِالأَمِيرِ الجَمْرِيِّ (أَعْلَى اللهُ مَقَامَهُ)، أُسْتَاذًا لِأُصُولِ الفِقْهِ وَالفَلْسَفَةِ وَالتَّفْسِيرِ وَالعَقَائِدِ وَالأَخْلَاقِ.<br><br>وَلَمْ يَنْقَطِعْ مُنْذُ رُجُوعِهِ عَنِ الاِهْتِمَامِ بِشَرِيحَةِ الشَّبَابِ؛ كَمَا أَنَّهُ قَامَ بِنَدَوَاتٍ خَاصَّةٍ بِعُنْوَانِ <em>«بِنَاءِ الذَّاتِ»</em> الَّتِي تَهْتَمُّ بِالاِرْتِقَاءِ وَالتَّطْوِيرِ لِلنَّفْسِ الإِنْسَانِيَّةِ.<br><br>(كَمَا تَابَعَ نَشَاطَهُ التَّبْلِيغِيَّ دَاخِلَ قَرْيَتِهِ مِنْ خِلَالِ إِقَامَةِ صَلَاةِ الجَمَاعَةِ بِالمَسْجِدِ الوَسَطِيِّ وَإِلْقَاءِ المُحَاضَرَاتِ فِي مُخْتَلِفِ المَحَافِلِ وَالمُنَاسَبَاتِ، وَلَهُ جَلْسَةٌ أُسْبُوعِيَّةٌ فِي مَنْزِلِهِ المُتَوَاضِعِ تَتَخَلَّلُهَا مُحَاضَرَاتٌ فِي التَّفْسِيرِ وَالعَقَائِدِ وَالأَخْلَاقِ).`
+      },
+      {
+        title: '✨ صِفَاتُهُ وَشَمَائِلُهُ',
+        content: `تَمَيَّزَ سَمَاحَتُهُ بِتَقْوَاهُ وَتَوَاضُعِهِ الشَّدِيدِ وَنَفْسِهِ الطَّيِّبَةِ وَرُوحِهِ الفَكِهَةِ وَابْتِسَامَتِهِ العَرِيضَةِ وَتَرْحِيبِهِ الوَاضِحِ بِكُلِّ مَنْ يُلَاقِيهِ مِنْ صَغِيرٍ وَكَبِيرٍ، مِمَّا جَعَلَهُ مَوْضِعَ احْتِرَامٍ وَمَحَبَّةٍ لَدَى كُلِّ مَنْ عَرَفَهُ أَوْ جَالَسَهُ.`
+      }
+    ]
+  }
+};
+// ── عرض المشايخ ──
 function renderSpeakers(id) {
   const el = document.getElementById(id);
   if (!el) return;
   const map = {};
   getLectures().forEach(l => { map[l.speaker] = (map[l.speaker] || 0) + 1; });
-  const icons = ['👨🏫','🧑🎓','📚','🕌','✍️'];
-  el.innerHTML = Object.entries(map).map(([name, count], i) => `
-    <div class="speaker-card">
-      <div class="speaker-avatar">${icons[i % icons.length]}</div>
+  
+  el.innerHTML = Object.entries(map).map(([name, count]) => {
+    const speakerInfo = SPEAKERS_DATA[name];
+    const photo = speakerInfo?.photo || '';
+    const avatarHtml = photo 
+      ? `<img src="${photo}" alt="${name}" onerror="this.parentElement.innerHTML='🕌'">`
+      : '🕌';
+      
+    return `
+    <div class="speaker-card" onclick="openSpeakerBio('${name.replace(/'/g, "\\'")}')">
+      <div class="speaker-avatar">${avatarHtml}</div>
       <h4>${name}</h4>
-      <span class="speaker-count">${toAr(count)} مادة</span>
-    </div>`).join('');
+      <span class="speaker-count">${toAr(count)} مادة مشروحة</span>
+      <div class="speaker-bio-btn">السيرة الذاتية والمعلومات ←</div>
+    </div>`;
+  }).join('');
 }
+
+function openSpeakerBio(speakerName) {
+  const bio = SPEAKERS_DATA[speakerName];
+  const overlay = document.getElementById('bioModalOverlay');
+  const body = document.getElementById('bioModalBody');
+  if (!overlay || !body) return;
+
+  if (!bio) {
+    body.innerHTML = `
+      <div style="text-align:center;padding:20px;">
+        <div style="font-size:48px;margin-bottom:12px;">🕌</div>
+        <h3 style="color:var(--green);margin-bottom:10px;">${speakerName}</h3>
+        <p style="color:var(--muted)">جاري توثيق وإعداد السيرة الذاتية لسماحة الشيخ قريباً بإذن الله تعالى.</p>
+      </div>`;
+    overlay.classList.add('open');
+    return;
+  }
+
+  let sectionsHtml = bio.sections.map(sec => `
+    <div style="margin-bottom:20px;">
+      <h4 class="bio-section-title">${sec.title}</h4>
+      <p class="bio-text">${sec.content}</p>
+      ${sec.bullets ? `<ul class="bio-list">${sec.bullets.map(b => `<li>${b}</li>`).join('')}</ul>` : ''}
+    </div>
+  `).join('');
+
+  body.innerHTML = `
+    <div class="bio-header">
+      <img src="${bio.photo}" alt="${bio.name}" class="bio-avatar" onerror="this.style.display='none'">
+      <div>
+        <h2 style="color:var(--green);font-size:22px;margin:0 0 6px;">${bio.name}</h2>
+        <p style="color:var(--gold);font-weight:700;font-size:14px;margin:0 0 4px;">${bio.title}</p>
+        <span style="font-size:13px;color:var(--muted);">📍 ${bio.origin}</span>
+      </div>
+    </div>
+    <div class="bio-body">
+      ${sectionsHtml}
+    </div>
+  `;
+
+  overlay.classList.add('open');
+}
+
+function closeSpeakerBio() {
+  const overlay = document.getElementById('bioModalOverlay');
+  if (overlay) overlay.classList.remove('open');
+}
+
 
 // ── الأرشيف والبحث ──
 let currentPage = 1;
@@ -586,6 +688,15 @@ function initializeApp() {
 
   if (closeAdminBtn) closeAdminBtn.addEventListener('click', closeAdmin);
   if (cancelAdminBtn) cancelAdminBtn.addEventListener('click', closeAdmin);
+  
+  const closeBioModalBtn = document.getElementById('closeBioModal');
+  const bioModalOverlay = document.getElementById('bioModalOverlay');
+  if (closeBioModalBtn) closeBioModalBtn.addEventListener('click', closeSpeakerBio);
+  if (bioModalOverlay) {
+    bioModalOverlay.addEventListener('click', e => {
+      if (e.target === bioModalOverlay) closeSpeakerBio();
+    });
+  }
 
   if (adminOverlay) {
     adminOverlay.addEventListener('click', e => {
