@@ -144,7 +144,7 @@ function makeCard(x) {
 // ── تحديث الإحصائيات ──
 function updateStats() {
   const L = getLectures();
-  const speakers = [...new Set(L.map(l => l.speaker))].length;
+  const speakers = [...new Set(getLectures().filter(l => l.speaker === 'الشيخ أحمد الشهابي').map(l => l.speaker))].length;
   // أي مادة تحتوي على رابط يوتيوب/فيديو تُحسب تلقائياً في المرئيات
   const videos   = L.filter(l => l.type === 'مرئية' || Boolean(l.videoUrl)).length;
   // أي مادة تحتوي على رابط ساوندكلاود/صوت تُحسب تلقائياً في الصوتيات
@@ -214,7 +214,10 @@ function renderSpeakers(id) {
   const el = document.getElementById(id);
   if (!el) return;
   const map = {};
-  getLectures().forEach(l => { map[l.speaker] = (map[l.speaker] || 0) + 1; });
+  // عرض الشيخ أحمد الشهابي فقط
+  getLectures()
+    .filter(l => l.speaker === 'الشيخ أحمد الشهابي')
+    .forEach(l => { map[l.speaker] = (map[l.speaker] || 0) + 1; });
   
   el.innerHTML = Object.entries(map).map(([name, count]) => {
     const speakerInfo = SPEAKERS_DATA[name];
@@ -756,12 +759,7 @@ function initializeApp() {
     });
   }
 
-  // ربط زر تسجيل دخول المشرف في القائمة
-  const navLogin = document.getElementById('navAdminLogin');
-  const mobileLogin = document.getElementById('mobileAdminLogin');
-  if (navLogin) navLogin.addEventListener('click', e => { e.preventDefault(); toggleAdminSession(); });
-  if (mobileLogin) mobileLogin.addEventListener('click', e => { e.preventDefault(); toggleAdminSession(); });
-
+  // ربط زر تسجيل دخول المشرف في القائمة يتم عبر Event Delegation
   updateAdminUI();
 
   if (adminOverlay) {
@@ -854,6 +852,8 @@ function initializeApp() {
     }
     const pgBtn = e.target.closest('[data-pg]');
     if (pgBtn) { currentPage = Number(pgBtn.dataset.pg); renderArchive(); return; }
+    const adminLogin = e.target.closest('[data-admin-login]');
+    if (adminLogin) { e.preventDefault(); toggleAdminSession(); return; }
   });
 
   // ربط عناصر البحث والفلاتر
