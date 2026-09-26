@@ -131,8 +131,10 @@ function makeCard(x) {
 function updateStats() {
   const L = getLectures();
   const speakers = [...new Set(L.map(l => l.speaker))].length;
-  const videos   = L.filter(l => l.type === 'مرئية').length;
-  const audios   = L.filter(l => l.type === 'صوتية').length;
+  // أي مادة تحتوي على رابط يوتيوب/فيديو تُحسب تلقائياً في المرئيات
+  const videos   = L.filter(l => l.type === 'مرئية' || Boolean(l.videoUrl)).length;
+  // أي مادة تحتوي على رابط ساوندكلاود/صوت تُحسب تلقائياً في الصوتيات
+  const audios   = L.filter(l => l.type === 'صوتية' || Boolean(l.audioUrl)).length;
   const $ = id => document.getElementById(id);
   if ($('totalCount'))   $('totalCount').textContent   = toAr(L.length);
   if ($('statTotal'))    $('statTotal').textContent    = toAr(L.length);
@@ -176,7 +178,20 @@ function renderArchive() {
 
   let found = L.filter(x => {
     const text = [x.title, x.speaker, x.category, x.keywords, x.desc].join(' ').toLowerCase();
-    return (!q || text.includes(q)) && (!type || x.type === type) && (!cat || x.category.includes(cat));
+    
+    // مطابقة النوع بذكاء:
+    // إذا اختار "مرئية"، يجلب المواد المرئية + أي درس يحتوي على فيديو
+    // إذا اختار "صوتية"، يجلب المواد الصوتية + أي درس يحتوي على صوت
+    let matchesType = !type;
+    if (type === 'مرئية') {
+      matchesType = x.type === 'مرئية' || Boolean(x.videoUrl);
+    } else if (type === 'صوتية') {
+      matchesType = x.type === 'صوتية' || Boolean(x.audioUrl);
+    } else if (type) {
+      matchesType = x.type === type;
+    }
+
+    return (!q || text.includes(q)) && matchesType && (!cat || x.category.includes(cat));
   });
 
   if (sort === 'oldest') found = [...found].reverse();
