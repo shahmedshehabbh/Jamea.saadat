@@ -532,8 +532,8 @@ function showDetail(id, viewMode = '') {
   actions.innerHTML = '';
   if (x.videoUrl) actions.innerHTML += `<a href="${x.videoUrl}" target="_blank" class="btn-primary">🎬 فتح في YouTube</a>`;
   if (x.audioUrl) actions.innerHTML += `<a href="${x.audioUrl}" target="_blank" class="btn-outline">🎧 فتح في SoundCloud</a>`;
-  actions.innerHTML += `<button type="button" class="btn-outline" style="border-color:var(--gold);color:var(--gold);cursor:pointer;" onclick="editLecture(${x.id})">✏️ تعديل المادة</button>`;
-  actions.innerHTML += `<button type="button" class="btn-outline" style="border-color:#e53e3e;color:#e53e3e;cursor:pointer;" onclick="deleteLecture(${x.id})">🗑️ حذف</button>`;
+  actions.innerHTML += `<button type="button" class="btn-outline admin-only" style="border-color:var(--gold);color:var(--gold);cursor:pointer;" onclick="editLecture(${x.id})">✏️ تعديل المادة</button>`;
+  actions.innerHTML += `<button type="button" class="btn-outline admin-only" style="border-color:#e53e3e;color:#e53e3e;cursor:pointer;" onclick="deleteLecture(${x.id})">🗑️ حذف</button>`;
 
   const related = L.filter(l => l.id !== x.id && (l.category === x.category || l.speaker === x.speaker)).slice(0, 4);
   const rl = document.getElementById('relatedList');
@@ -565,8 +565,50 @@ function isAdminAuthenticated() {
   return sessionStorage.getItem(ADMIN_STORAGE_KEY) === 'true';
 }
 
+function updateAdminUI() {
+  const isAuth = isAdminAuthenticated();
+  if (isAuth) {
+    document.body.classList.add('is-admin');
+    const navLogin = document.getElementById('navAdminLogin');
+    const mobileLogin = document.getElementById('mobileAdminLogin');
+    if (navLogin) {
+      navLogin.innerHTML = '🔓 خروج المشرف';
+      navLogin.style.color = '#e53e3e';
+    }
+    if (mobileLogin) {
+      mobileLogin.innerHTML = '🔓 خروج المشرف';
+      mobileLogin.style.color = '#e53e3e';
+    }
+  } else {
+    document.body.classList.remove('is-admin');
+    const navLogin = document.getElementById('navAdminLogin');
+    const mobileLogin = document.getElementById('mobileAdminLogin');
+    if (navLogin) {
+      navLogin.innerHTML = '🔒 دخول المشرف';
+      navLogin.style.color = 'var(--gold)';
+    }
+    if (mobileLogin) {
+      mobileLogin.innerHTML = '🔒 دخول المشرف';
+      mobileLogin.style.color = 'var(--gold)';
+    }
+  }
+}
+
+function toggleAdminSession() {
+  if (isAdminAuthenticated()) {
+    if (confirm('هل ترغب في تسجيل خروج المشرف وإخفاء لوحة التحكم؟')) {
+      sessionStorage.removeItem(ADMIN_STORAGE_KEY);
+      updateAdminUI();
+      showToast('🔒 تم تسجيل الخروج بنجاح');
+    }
+    return;
+  }
+  requireAdminAuth();
+}
+
 function requireAdminAuth(callback) {
   if (isAdminAuthenticated()) {
+    updateAdminUI();
     if (callback) callback();
     return;
   }
@@ -577,6 +619,7 @@ function requireAdminAuth(callback) {
   // كلمة المرور للمشرف
   if (password === '222666') {
     sessionStorage.setItem(ADMIN_STORAGE_KEY, 'true');
+    updateAdminUI();
     showToast('🔓 مرحباً بك أيها المشرف');
     if (callback) callback();
   } else {
@@ -697,6 +740,14 @@ function initializeApp() {
       if (e.target === bioModalOverlay) closeSpeakerBio();
     });
   }
+
+  // ربط زر تسجيل دخول المشرف في القائمة
+  const navLogin = document.getElementById('navAdminLogin');
+  const mobileLogin = document.getElementById('mobileAdminLogin');
+  if (navLogin) navLogin.addEventListener('click', e => { e.preventDefault(); toggleAdminSession(); });
+  if (mobileLogin) mobileLogin.addEventListener('click', e => { e.preventDefault(); toggleAdminSession(); });
+
+  updateAdminUI();
 
   if (adminOverlay) {
     adminOverlay.addEventListener('click', e => {

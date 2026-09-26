@@ -415,3 +415,13 @@ img { max-width: 100%; display: block; }
   .form-grid.cols-3 { grid-template-columns: 1fr; }
 }
 
+
+
+
+/* إخفاء عناصر الإدارة افتراضياً لغير المشرف */
+body:not(.is-admin) .admin-only {
+  display: none !important;
+}
+body:not(.is-admin) .admin-toggle {
+  display: none !important;
+}
