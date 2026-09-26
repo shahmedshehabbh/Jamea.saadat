@@ -4,6 +4,7 @@
 
 // اختبار تحميل الملف
 console.log('🔵 app.js loaded successfully!');
+const LECTURES_STORAGE_KEY = 'saadat_lectures_v2';
 
 // ── بيانات المحاضرات الافتراضية ──
 const DEFAULT_LECTURES = [
@@ -87,13 +88,13 @@ const DEFAULT_LECTURES = [
 // ── إدارة البيانات عبر localStorage ──
 function getLectures() {
   try {
-    const s = localStorage.getItem('saadat_lectures');
+    const s = localStorage.getItem(LECTURES_STORAGE_KEY);
     return s ? JSON.parse(s) : DEFAULT_LECTURES;
   } catch { return DEFAULT_LECTURES; }
 }
 
 function saveLectures(arr) {
-  localStorage.setItem('saadat_lectures', JSON.stringify(arr));
+  localStorage.setItem(LECTURES_STORAGE_KEY, JSON.stringify(arr));
 }
 
 function toAr(n) {
@@ -263,7 +264,7 @@ function openSpeakerBio(speakerName) {
 
   body.innerHTML = `
     <div class="bio-header">
-      <img src="${bio.photo}" alt="${bio.name}" class="bio-avatar" onerror="this.style.display='none'">
+      <img src="${bio.photo}" alt="${bio.name}" class="bio-avatar" onerror="this.outerHTML='<span style=\"width:120px;height:120px;border-radius:50%;border:4px solid var(--gold);display:flex;align-items:center;justify-content:center;font-size:48px;\">🕌</span>'">
       <div>
         <h2 style="color:var(--green);font-size:22px;margin:0 0 6px;">${bio.name}</h2>
         <p style="color:var(--gold);font-weight:700;font-size:14px;margin:0 0 4px;">${bio.title}</p>

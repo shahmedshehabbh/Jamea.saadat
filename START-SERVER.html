@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>🚀 تشغيل الموقع</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', Tahoma, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .container {
+      background: white;
+      border-radius: 20px;
+      padding: 40px;
+      max-width: 600px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      text-align: center;
+    }
+    h1 { color: #333; margin-bottom: 20px; font-size: 32px; }
+    .problem {
+      background: #fff3cd;
+      padding: 20px;
+      border-radius: 10px;
+      margin: 20px 0;
+      border-right: 4px solid #ffc107;
+      text-align: right;
+    }
+    .solution {
+      background: #d4edda;
+      padding: 20px;
+      border-radius: 10px;
+      margin: 20px 0;
+      border-right: 4px solid #28a745;
+      text-align: right;
+    }
+    .btn {
+      display: inline-block;
+      padding: 15px 30px;
+      margin: 10px;
+      background: #28a745;
+      color: white;
+      text-decoration: none;
+      border-radius: 10px;
+      font-weight: bold;
+      font-size: 18px;
+      transition: all 0.3s;
+    }
+    .btn:hover {
+      background: #218838;
+      transform: scale(1.05);
+    }
+    .btn-primary {
+      background: #007bff;
+    }
+    .btn-primary:hover {
+      background: #0056b3;
+    }
+    .code {
+      background: #1e1e1e;
+      color: #d4d4d4;
+      padding: 15px;
+      border-radius: 8px;
+      font-family: 'Courier New', monospace;
+      margin: 15px 0;
+      text-align: left;
+      overflow-x: auto;
+    }
+    .steps {
+      text-align: right;
+      line-height: 2;
+    }
+    .steps li {
+      margin: 10px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>⚠️ المشكلة وجدت!</h1>
+    
+    <div class="problem">
+      <h3>❌ المشكلة:</h3>
+      <p>المتصفح يمنع تحميل JavaScript عند فتح الملف مباشرة (<code>file://</code>)</p>
+      <p>هذا قيد أمني في المتصفحات الحديثة.</p>
+    </div>
+
+    <div class="solution">
+      <h3>✅ الحل:</h3>
+      <p><strong>استخدم سيرفر محلي بسيط!</strong></p>
+    </div>
+
+    <h2>🎯 الطرق المتاحة:</h2>
+
+    <div class="solution">
+      <h3>🟢 الطريقة 1: Python (الأسهل)</h3>
+      <div class="steps">
+        <p><strong>إذا كان لديك Python:</strong></p>
+        <ol style="padding-right: 20px;">
+          <li>افتح PowerShell في مجلد الموقع</li>
+          <li>اكتب:</li>
+        </ol>
+      </div>
+      <div class="code">python -m http.server 8000</div>
+      <p>ثم افتح: <a href="http://localhost:8000" target="_blank">http://localhost:8000</a></p>
+    </div>
+
+    <div class="solution">
+      <h3>🔵 الطريقة 2: Node.js</h3>
+      <div class="steps">
+        <p><strong>إذا كان لديك Node.js:</strong></p>
+        <ol style="padding-right: 20px;">
+          <li>افتح PowerShell في مجلد الموقع</li>
+          <li>اكتب:</li>
+        </ol>
+      </div>
+      <div class="code">npx http-server -p 8000</div>
+      <p>ثم افتح: <a href="http://localhost:8000" target="_blank">http://localhost:8000</a></p>
+    </div>
+
+    <div class="solution">
+      <h3>🟣 الطريقة 3: VS Code (إذا كان مثبتاً)</h3>
+      <div class="steps">
+        <ol style="padding-right: 20px;">
+          <li>افتح مجلد الموقع في VS Code</li>
+          <li>ثبت إضافة: <strong>Live Server</strong></li>
+          <li>انقر بزر الماوس الأيمن على index.html</li>
+          <li>اختر: <strong>Open with Live Server</strong></li>
+        </ol>
+      </div>
+    </div>
+
+    <hr style="margin: 30px 0;">
+
+    <h3>🚀 هل تريد المساعدة في التشغيل؟</h3>
+    <p>أخبرني أي من البرامج التالية مثبت لديك:</p>
+    <ul style="list-style: none; padding: 0;">
+      <li>✅ Python</li>
+      <li>✅ Node.js</li>
+      <li>✅ VS Code</li>
+      <li>❌ لا شيء منها (سأساعدك في التثبيت)</li>
+    </ul>
+
+    <div style="margin-top: 30px;">
+      <a href="index.html" class="btn btn-primary">⚠️ جرب فتح الموقع مباشرة (قد لا يعمل)</a>
+    </div>
+  </div>
+</body>
+</html>
