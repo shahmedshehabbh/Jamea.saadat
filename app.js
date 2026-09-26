@@ -422,67 +422,96 @@ function showToast(msg, dur = 3000) {
   setTimeout(() => t.classList.remove('show'), dur);
 }
 
-function openAdmin()  { 
-  console.log('✅ openAdmin() called');
-  const modalTitle = document.getElementById('adminModalTitle');
-  if (modalTitle) modalTitle.textContent = '➕ إضافة مادة جديدة';
-  const editIdInput = document.getElementById('fEditId');
-  if (editIdInput) editIdInput.value = '';
-  const form = document.getElementById('adminForm');
-  if (form) form.reset();
+// ── نظام حماية الإدارة وكلمة المرور (Admin Security) ──
+const ADMIN_STORAGE_KEY = 'saadat_admin_auth';
 
-  const overlay = document.getElementById('adminOverlay');
-  console.log('Overlay element:', overlay);
-  if (overlay) {
-    overlay.classList.add('open');
-    console.log('✅ Modal opened');
+function isAdminAuthenticated() {
+  return sessionStorage.getItem(ADMIN_STORAGE_KEY) === 'true';
+}
+
+function requireAdminAuth(callback) {
+  if (isAdminAuthenticated()) {
+    if (callback) callback();
+    return;
+  }
+  
+  const password = prompt('🔒 لوحة الإدارة محمية\nيرجى إدخال كلمة مرور المشرف (Admin Password):');
+  if (!password) return;
+
+  // كلمة المرور الافتراضية
+  if (password === '123456' || password === 'admin' || password === 'saadat2026') {
+    sessionStorage.setItem(ADMIN_STORAGE_KEY, 'true');
+    showToast('🔓 مرحباً بك أيها المشرف');
+    if (callback) callback();
   } else {
-    console.error('❌ adminOverlay not found!');
+    alert('❌ كلمة المرور غير صحيحة!');
   }
 }
 
+function openAdmin()  { 
+  console.log('✅ openAdmin() called');
+  requireAdminAuth(() => {
+    const modalTitle = document.getElementById('adminModalTitle');
+    if (modalTitle) modalTitle.textContent = '➕ إضافة مادة جديدة';
+    const editIdInput = document.getElementById('fEditId');
+    if (editIdInput) editIdInput.value = '';
+    const form = document.getElementById('adminForm');
+    if (form) form.reset();
+
+    const overlay = document.getElementById('adminOverlay');
+    if (overlay) {
+      overlay.classList.add('open');
+      console.log('✅ Modal opened');
+    }
+  });
+}
+
 function editLecture(id) {
-  const L = getLectures();
-  const x = L.find(l => l.id === Number(id));
-  if (!x) return;
+  requireAdminAuth(() => {
+    const L = getLectures();
+    const x = L.find(l => l.id === Number(id));
+    if (!x) return;
 
-  const setVal = (fid, val) => {
-    const el = document.getElementById(fid);
-    if (el) el.value = val || '';
-  };
+    const setVal = (fid, val) => {
+      const el = document.getElementById(fid);
+      if (el) el.value = val || '';
+    };
 
-  setVal('fEditId', x.id);
-  setVal('fTitle', x.title);
-  setVal('fSpeaker', x.speaker);
-  setVal('fDate', x.date);
-  setVal('fCategory', x.category);
-  setVal('fType', x.type);
-  setVal('fDuration', x.duration);
-  setVal('fImage', x.image);
-  setVal('fDesc', x.desc);
-  setVal('fSummary', x.summary || x.desc);
-  setVal('fPoints', (x.points || []).join('\n'));
-  setVal('fKeywords', x.keywords);
-  setVal('fVideoUrl', x.videoUrl);
-  setVal('fAudioUrl', x.audioUrl);
+    setVal('fEditId', x.id);
+    setVal('fTitle', x.title);
+    setVal('fSpeaker', x.speaker);
+    setVal('fDate', x.date);
+    setVal('fCategory', x.category);
+    setVal('fType', x.type);
+    setVal('fDuration', x.duration);
+    setVal('fImage', x.image);
+    setVal('fDesc', x.desc);
+    setVal('fSummary', x.summary || x.desc);
+    setVal('fPoints', (x.points || []).join('\n'));
+    setVal('fKeywords', x.keywords);
+    setVal('fVideoUrl', x.videoUrl);
+    setVal('fAudioUrl', x.audioUrl);
 
-  const modalTitle = document.getElementById('adminModalTitle');
-  if (modalTitle) modalTitle.textContent = '✏️ تعديل مادة: ' + x.title;
+    const modalTitle = document.getElementById('adminModalTitle');
+    if (modalTitle) modalTitle.textContent = '✏️ تعديل مادة: ' + x.title;
 
-  const overlay = document.getElementById('adminOverlay');
-  if (overlay) overlay.classList.add('open');
+    const overlay = document.getElementById('adminOverlay');
+    if (overlay) overlay.classList.add('open');
+  });
 }
 
 function deleteLecture(id) {
-  if (!confirm('هل أنت متأكد من رغبتك في حذف هذه المحاضرة نهائياً؟')) return;
-  let L = getLectures();
-  L = L.filter(l => l.id !== Number(id));
-  saveLectures(L);
-  showToast('🗑️ تم حذف المحاضرة بنجاح');
-  show('home');
-  updateStats();
-  renderLatest();
-  renderArchive();
+  requireAdminAuth(() => {
+    if (!confirm('هل أنت متأكد من رغبتك في حذف هذه المحاضرة نهائياً؟')) return;
+    let L = getLectures();
+    L = L.filter(l => l.id !== Number(id));
+    saveLectures(L);
+    showToast('🗑️ تم حذف المحاضرة بنجاح');
+    show('home');
+    updateStats();
+    renderLatest();
+    renderArchive();
+  });
 }
 
 function closeAdmin() { 
