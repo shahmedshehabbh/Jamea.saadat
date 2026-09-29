@@ -27,10 +27,10 @@
       </div>
     </div>
     <div class="links">
-      <a href="#" data-home>الرئيسية</a>
-      <a href="#" data-archive>المحاضرات</a>
-      <a href="#" data-page="speakers-page">المشايخ</a>
-      <a href="#" data-page="about-page">عن الكتاب</a>
+      <a href="#home" data-home>الرئيسية</a>
+      <a href="#archive" data-archive>المحاضرات</a>
+      <a href="#speakers-page" data-page="speakers-page">المشايخ</a>
+      <a href="#about-page" data-page="about-page">عن الكتاب</a>
       <a href="javascript:void(0)" id="navAdminLogin" data-admin-login style="color:var(--gold);font-size:13px;">🔒 دخول المشرف</a>
     </div>
     <button class="nav-cta" data-archive>البحث</button>
@@ -41,10 +41,10 @@
 <!-- ── Mobile Nav ── -->
 <div class="mobile-nav" id="mobileNav">
   <button class="close-menu" id="closeMenu">✕</button>
-  <a href="#" data-home>الرئيسية</a>
-  <a href="#" data-archive>المحاضرات</a>
-  <a href="#" data-page="speakers-page">المشايخ</a>
-  <a href="#" data-page="about-page">عن الكتاب</a>
+  <a href="#home" data-home>الرئيسية</a>
+  <a href="#archive" data-archive>المحاضرات</a>
+  <a href="#speakers-page" data-page="speakers-page">المشايخ</a>
+  <a href="#about-page" data-page="about-page">عن الكتاب</a>
   <a href="javascript:void(0)" id="mobileAdminLogin" data-admin-login style="color:var(--gold);">🔒 دخول المشرف</a>
 </div>
 
@@ -78,10 +78,10 @@
   <section class="section" style="padding-top:0;padding-bottom:48px;background:var(--cream)">
     <div class="shell">
       <div class="quick">
-        <a href="#" data-type="مرئية"><span class="icon">🎬</span><span>محاضرات مرئية</span></a>
-        <a href="#" data-type="صوتية"><span class="icon">🎧</span><span>دروس صوتية</span></a>
-        <a href="#" data-type="نصية"><span class="icon">📖</span><span>مواد نصية</span></a>
-        <a href="#" data-archive><span class="icon">📂</span><span>الكل</span></a>
+        <a href="#archive?type=مرئية" data-type="مرئية"><span class="icon">🎬</span><span>محاضرات مرئية</span></a>
+        <a href="#archive?type=صوتية" data-type="صوتية"><span class="icon">🎧</span><span>دروس صوتية</span></a>
+        <a href="#archive?type=نصية" data-type="نصية"><span class="icon">📖</span><span>مواد نصية</span></a>
+        <a href="#archive" data-archive><span class="icon">📂</span><span>الكل</span></a>
       </div>
     </div>
   </section>
@@ -94,7 +94,7 @@
           <p class="eyebrow">✦ الأحدث</p>
           <h2>آخر المحاضرات</h2>
         </div>
-        <a class="view-all" href="#" data-archive>عرض الكل ←</a>
+        <a class="view-all" href="#archive" data-archive>عرض الكل ←</a>
       </div>
       <div class="cards" id="latestCards"></div>
     </div>
@@ -121,7 +121,7 @@
           <p class="eyebrow" style="color:#e4bc70">✦ عن الكتاب</p>
           <h2>جامع السعادات للنراقي</h2>
           <p>كتاب جامع السعادات للعلامة المحقق المولى مهدي النراقي من أهم كتب الأخلاق الإسلامية، يتناول تهذيب النفس وعلاج رذائل الأخلاق وتحلية الإنسان بالفضائل.</p>
-          <a href="#" class="btn-gold" data-page="about-page">اقرأ المزيد ←</a>
+          <a href="#about-page" class="btn-gold" data-page="about-page">اقرأ المزيد ←</a>
         </div>
       </div>
     </div>
@@ -135,7 +135,7 @@
           <p class="eyebrow">✦ العلماء والمشايخ</p>
           <h2>أبرز الشارحين</h2>
         </div>
-        <a class="view-all" href="#" data-page="speakers-page">عرض الكل ←</a>
+        <a class="view-all" href="#speakers-page" data-page="speakers-page">عرض الكل ←</a>
       </div>
       <div class="speakers" id="speakersGrid"></div>
     </div>
@@ -193,7 +193,7 @@
 <div class="section-page" id="detail">
   <section class="section" style="padding-top:40px">
     <div class="shell">
-      <a href="#" class="btn-outline" data-archive style="display:inline-flex;align-items:center;gap:6px;margin-bottom:20px">→ العودة للمحاضرات</a>
+      <a href="#archive" class="btn-outline" data-archive style="display:inline-flex;align-items:center;gap:6px;margin-bottom:20px">→ العودة للمحاضرات</a>
       <div class="detail-head">
         <p class="eyebrow" id="detailCategory"></p>
         <h1 id="detailTitle"></h1>
@@ -292,18 +292,18 @@
       <div>
         <h5>روابط سريعة</h5>
         <ul>
-          <li><a href="#" data-home>الرئيسية</a></li>
-          <li><a href="#" data-archive>المحاضرات</a></li>
-          <li><a href="#" data-page="speakers-page">المشايخ</a></li>
-          <li><a href="#" data-page="about-page">عن الكتاب</a></li>
+          <li><a href="#home" data-home>الرئيسية</a></li>
+          <li><a href="#archive" data-archive>المحاضرات</a></li>
+          <li><a href="#speakers-page" data-page="speakers-page">المشايخ</a></li>
+          <li><a href="#about-page" data-page="about-page">عن الكتاب</a></li>
         </ul>
       </div>
       <div>
         <h5>أنواع المواد</h5>
         <ul>
-          <li><a href="#" data-type="مرئية">🎬 المرئيات</a></li>
-          <li><a href="#" data-type="صوتية">🎧 الصوتيات</a></li>
-          <li><a href="#" data-type="نصية">📖 النصوص</a></li>
+          <li><a href="#archive?type=مرئية" data-type="مرئية">🎬 المرئيات</a></li>
+          <li><a href="#archive?type=صوتية" data-type="صوتية">🎧 الصوتيات</a></li>
+          <li><a href="#archive?type=نصية" data-type="نصية">📖 النصوص</a></li>
         </ul>
       </div>
       <div>

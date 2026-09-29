@@ -806,13 +806,14 @@ let updatingHash = false;
 
 function handleHashChange() {
   if (updatingHash) return;
-  const hash = location.hash.substring(1); // remove leading #
+  const [hash, queryString = ''] = location.hash.substring(1).split('?');
+  const params = new URLSearchParams(queryString);
 
   // Check for lecture detail
-  const lectureMatch = hash.match(/^lecture\/(\d+)(?:\?viewmode=([^&]*))?$/);
+  const lectureMatch = hash.match(/^lecture\/(\d+)$/);
   if (lectureMatch) {
     const id = lectureMatch[1];
-    const viewMode = lectureMatch[2] || '';
+    const viewMode = params.get('viewmode') || '';
     showDetail(id, viewMode);
     return;
   }
@@ -830,6 +831,15 @@ function handleHashChange() {
   }
   // For other hashes, default to home
 
+  if (view === 'archive') {
+    const type = params.get('type') || '';
+    const typeFilter = document.getElementById('typeFilter');
+    if (typeFilter) typeFilter.value = type;
+    document.querySelectorAll('.filter-tag').forEach(tag => {
+      tag.classList.toggle('active', tag.dataset.tag === type);
+    });
+    currentPage = 1;
+  }
   show(view);
 }
 
@@ -837,6 +847,12 @@ function handleHashChange() {
 handleHashChange();
 
 window.addEventListener('hashchange', handleHashChange);
+
+function navigateToHash(hash) {
+  const target = `#${hash}`;
+  if (window.location.hash === target) handleHashChange();
+  else window.location.hash = target;
+}
 
 function showToast(msg, dur = 3000) {
   const t = document.getElementById('toast');
@@ -1167,18 +1183,18 @@ function initializeApp() {
       return; 
     }
     const pageLink = e.target.closest('[data-page]');
-    if (pageLink) { e.preventDefault(); show(pageLink.dataset.page); return; }
+    if (pageLink) { e.preventDefault(); navigateToHash(pageLink.dataset.page); return; }
     const typeLink = e.target.closest('[data-type]');
-    if (typeLink) { e.preventDefault(); document.getElementById('typeFilter').value = typeLink.dataset.type; currentPage = 1; show('archive'); return; }
-    if (e.target.closest('[data-archive]')) { e.preventDefault(); currentPage = 1; show('archive'); return; }
-    if (e.target.closest('[data-home]')) { e.preventDefault(); show('home'); return; }
+    if (typeLink) { e.preventDefault(); navigateToHash(`archive?type=${encodeURIComponent(typeLink.dataset.type)}`); return; }
+    if (e.target.closest('[data-archive]')) { e.preventDefault(); navigateToHash('archive'); return; }
+    if (e.target.closest('[data-home]')) { e.preventDefault(); navigateToHash('home'); return; }
     const tag = e.target.closest('[data-tag]');
     if (tag) {
       e.preventDefault();
-      document.querySelectorAll('.filter-tag').forEach(b => b.classList.remove('active'));
-      tag.classList.add('active');
-      document.getElementById('typeFilter').value = tag.dataset.tag;
-      currentPage = 1; renderArchive(); return;
+      navigateToHash(tag.dataset.tag
+        ? `archive?type=${encodeURIComponent(tag.dataset.tag)}`
+        : 'archive');
+      return;
     }
     const pgBtn = e.target.closest('[data-pg]');
     if (pgBtn) { currentPage = Number(pgBtn.dataset.pg); renderArchive(); return; }
@@ -1210,7 +1226,11 @@ function initializeApp() {
     });
   }
 
-  if (typeFilter) typeFilter.addEventListener('change', () => { currentPage = 1; renderArchive(); });
+  if (typeFilter) typeFilter.addEventListener('change', () => {
+    navigateToHash(typeFilter.value
+      ? `archive?type=${encodeURIComponent(typeFilter.value)}`
+      : 'archive');
+  });
   if (categoryFilter) categoryFilter.addEventListener('change', () => { currentPage = 1; renderArchive(); });
   if (sortFilter) sortFilter.addEventListener('change', () => { currentPage = 1; renderArchive(); });
 
