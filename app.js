@@ -340,16 +340,16 @@ const SPEAKERS_DATA = {
 function renderSpeakers(id) {
   const el = document.getElementById(id);
   if (!el) return;
-  const map = {};
-  // عرض الشيخ أحمد الشهابي فقط
-  getLectures()
-    .filter(l => l.speaker === 'الشيخ أحمد الشهابي')
-    .forEach(l => { map[l.speaker] = (map[l.speaker] || 0) + 1; });
-  
-  el.innerHTML = Object.entries(map).map(([name, count]) => {
-    const speakerInfo = SPEAKERS_DATA[name];
-    const photo = speakerInfo?.photo || '';
-    const avatarHtml = photo 
+  const lectureCounts = new Map();
+  getLectures().forEach(lecture => {
+    const speaker = lecture.speaker.trim();
+    lectureCounts.set(speaker, (lectureCounts.get(speaker) || 0) + 1);
+  });
+
+  el.innerHTML = Object.entries(SPEAKERS_DATA).map(([name, speakerInfo]) => {
+    const count = lectureCounts.get(name) || 0;
+    const photo = speakerInfo.photo || '';
+    const avatarHtml = photo
       ? `<img src="${photo}" alt="${name}" onerror="this.parentElement.innerHTML='🕌'">`
       : '🕌';
       
@@ -357,6 +357,7 @@ function renderSpeakers(id) {
     <div class="speaker-card" onclick="openSpeakerBio('${name.replace(/'/g, "\\'")}')">
       <div class="speaker-avatar">${avatarHtml}</div>
       <h4>${name}</h4>
+      <p>${speakerInfo.title}</p>
       <span class="speaker-count">${toAr(count)} مادة مشروحة</span>
       <div class="speaker-bio-btn">السيرة الذاتية والمعلومات ←</div>
     </div>`;
