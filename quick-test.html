@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>تشخيص الزر</title>
+  <style>
+    body { font-family: Arial; padding: 20px; background: #f5f5f5; }
+    .result { padding: 15px; margin: 10px 0; border-radius: 5px; }
+    .ok { background: #d4edda; color: #155724; }
+    .error { background: #f8d7da; color: #721c24; }
+    button { padding: 15px 30px; font-size: 18px; margin: 10px; cursor: pointer; }
+    .test-btn { background: #DAA520; color: white; border: none; border-radius: 50%; width: 60px; height: 60px; }
+  </style>
+</head>
+<body>
+  <h1>🔍 فحص سريع</h1>
+  <div id="output"></div>
+  <button class="test-btn" onclick="alert('الزر يعمل!')">＋</button>
+  <hr>
+  <button onclick="window.open('index.html')">افتح الموقع</button>
+  
+  <script>
+    const output = document.getElementById('output');
+    
+    // اختبار 1: هل app.js موجود؟
+    fetch('app.js')
+      .then(r => r.text())
+      .then(code => {
+        output.innerHTML += `<div class="result ok">✅ app.js موجود (${Math.round(code.length/1024)} KB)</div>`;
+        
+        // اختبار هل يوجد أخطاء syntax
+        if (code.includes('<div class="speaker-card">')) {
+          output.innerHTML += `<div class="result error">❌ خطأ: كود HTML داخل JavaScript!</div>`;
+        }
+      })
+      .catch(e => {
+        output.innerHTML += `<div class="result error">❌ app.js غير موجود</div>`;
+      });
+    
+    // اختبار 2: هل index.html موجود؟
+    fetch('index.html')
+      .then(r => r.text())
+      .then(html => {
+        output.innerHTML += `<div class="result ok">✅ index.html موجود</div>`;
+        
+        if (html.includes('id="adminToggle"')) {
+          output.innerHTML += `<div class="result ok">✅ زر الإضافة موجود في HTML</div>`;
+        } else {
+          output.innerHTML += `<div class="result error">❌ زر الإضافة غير موجود في HTML</div>`;
+        }
+        
+        if (html.includes('id="adminOverlay"')) {
+          output.innerHTML += `<div class="result ok">✅ نافذة الإضافة موجودة في HTML</div>`;
+        } else {
+          output.innerHTML += `<div class="result error">❌ نافذة الإضافة غير موجودة</div>`;
+        }
+      });
+  </script>
+</body>
+</html>

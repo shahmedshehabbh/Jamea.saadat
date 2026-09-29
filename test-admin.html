@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <title>اختبار زر الإدارة</title>
+  <style>
+    body { font-family: Arial; padding: 50px; background: #f5f5f5; }
+    .status { padding: 20px; margin: 10px 0; border-radius: 8px; }
+    .pass { background: #d4edda; color: #155724; border: 2px solid #c3e6cb; }
+    .fail { background: #f8d7da; color: #721c24; border: 2px solid #f5c6cb; }
+    .info { background: #d1ecf1; color: #0c5460; border: 2px solid #bee5eb; }
+    button { padding: 10px 20px; font-size: 16px; cursor: pointer; margin: 5px; }
+  </style>
+</head>
+<body>
+  <h1>🔍 اختبار زر الإدارة (＋)</h1>
+  
+  <div id="results"></div>
+  
+  <button onclick="runTests()">▶️ تشغيل الاختبارات</button>
+  <button onclick="window.location.href='index.html'">🏠 العودة للموقع</button>
+
+  <script>
+    function runTests() {
+      const results = document.getElementById('results');
+      results.innerHTML = '';
+      
+      const tests = [
+        {
+          name: 'تحميل app.js',
+          test: () => typeof getLectures === 'function'
+        },
+        {
+          name: 'وجود زر الإضافة في DOM',
+          test: () => {
+            const btn = document.getElementById('adminToggle');
+            return btn !== null;
+          }
+        },
+        {
+          name: 'وجود نافذة الإضافة',
+          test: () => {
+            const overlay = document.getElementById('adminOverlay');
+            return overlay !== null;
+          }
+        },
+        {
+          name: 'وجود النموذج',
+          test: () => {
+            const form = document.getElementById('adminForm');
+            return form !== null;
+          }
+        },
+        {
+          name: 'دالة openAdmin موجودة',
+          test: () => typeof openAdmin === 'function'
+        },
+        {
+          name: 'دالة closeAdmin موجودة',
+          test: () => typeof closeAdmin === 'function'
+        },
+        {
+          name: 'Event Listener مربوط',
+          test: () => {
+            const btn = document.getElementById('adminToggle');
+            if (!btn) return false;
+            // محاولة النقر
+            try {
+              btn.click();
+              const overlay = document.getElementById('adminOverlay');
+              const isOpen = overlay && overlay.classList.contains('open');
+              // إغلاق النافذة
+              if (isOpen) closeAdmin();
+              return isOpen;
+            } catch(e) {
+              return false;
+            }
+          }
+        }
+      ];
+
+      tests.forEach(({name, test}) => {
+        const div = document.createElement('div');
+        div.className = 'status';
+        try {
+          const passed = test();
+          div.className += passed ? ' pass' : ' fail';
+          div.innerHTML = `${passed ? '✅' : '❌'} <strong>${name}</strong>`;
+        } catch(e) {
+          div.className += ' fail';
+          div.innerHTML = `❌ <strong>${name}</strong><br><small>خطأ: ${e.message}</small>`;
+        }
+        results.appendChild(div);
+      });
+    }
+
+    // تشغيل تلقائي
+    window.addEventListener('load', () => {
+      setTimeout(runTests, 500);
+    });
+  </script>
+
+  <!-- تحميل الملفات -->
+  <link rel="stylesheet" href="style.css">
+  <script src="app.js"></script>
+
+  <!-- العناصر المطلوبة للاختبار -->
+  <button id="adminToggle" style="display:none">＋</button>
+  <div id="adminOverlay" style="display:none">
+    <form id="adminForm"></form>
+  </div>
+  <div id="toast"></div>
+</body>
+</html>

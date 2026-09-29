@@ -5,6 +5,11 @@
 // اختبار تحميل الملف
 console.log('🔵 app.js loaded successfully!');
 const LECTURES_STORAGE_KEY = 'saadat_lectures_v2';
+const SUPABASE_TABLE = 'lectures';
+let lectures = [];
+let supabaseClient = null;
+let supabaseSession = null;
+let usesLocalFallback = true;
 
 // ── بيانات المحاضرات الافتراضية ──
 const DEFAULT_LECTURES = [
@@ -85,16 +90,120 @@ const DEFAULT_LECTURES = [
   }
 ];
 
-// ── إدارة البيانات عبر localStorage ──
+// ── تحميل البيانات ومزامنتها ──
 function getLectures() {
-  try {
-    const s = localStorage.getItem(LECTURES_STORAGE_KEY);
-    return s ? JSON.parse(s) : DEFAULT_LECTURES;
-  } catch { return DEFAULT_LECTURES; }
+  return lectures;
 }
 
-function saveLectures(arr) {
-  localStorage.setItem(LECTURES_STORAGE_KEY, JSON.stringify(arr));
+function readLocalLectures() {
+  const saved = localStorage.getItem(LECTURES_STORAGE_KEY);
+  if (!saved) return [...DEFAULT_LECTURES];
+  const parsed = JSON.parse(saved);
+  if (!Array.isArray(parsed)) throw new Error('بيانات المحاضرات المحلية غير صالحة.');
+  return parsed;
+}
+
+function lectureFromRow(row) {
+  return {
+    id: Number(row.id),
+    title: row.title,
+    speaker: row.speaker,
+    date: row.date || '',
+    category: row.category || '',
+    type: row.type,
+    duration: row.duration || '',
+    image: row.image || '',
+    desc: row.description || '',
+    summary: row.summary || '',
+    points: Array.isArray(row.points) ? row.points : [],
+    keywords: row.keywords || '',
+    videoUrl: row.video_url || '',
+    audioUrl: row.audio_url || ''
+  };
+}
+
+function lectureToRow(lecture) {
+  return {
+    title: lecture.title,
+    speaker: lecture.speaker,
+    date: lecture.date,
+    category: lecture.category,
+    type: lecture.type,
+    duration: lecture.duration,
+    image: lecture.image,
+    description: lecture.desc,
+    summary: lecture.summary,
+    points: lecture.points,
+    keywords: lecture.keywords,
+    video_url: lecture.videoUrl,
+    audio_url: lecture.audioUrl
+  };
+}
+
+async function loadLectures() {
+  const config = window.SUPABASE_CONFIG;
+  usesLocalFallback = !config || !config.url || !config.anonKey;
+
+  if (usesLocalFallback) {
+    lectures = readLocalLectures();
+    showToast('⚠️ Supabase غير مُعدّ: تُستخدم بيانات محلية على هذا الجهاز فقط.', 7000);
+    return;
+  }
+
+  if (!window.supabase || typeof window.supabase.createClient !== 'function') {
+    lectures = [];
+    showToast('تعذر تحميل مكتبة Supabase. تحقق من اتصال الإنترنت ثم أعد تحميل الصفحة.', 7000);
+    return;
+  }
+
+  supabaseClient = window.supabase.createClient(config.url, config.anonKey);
+  const { data, error } = await supabaseClient
+    .from(SUPABASE_TABLE)
+    .select('*')
+    .order('id', { ascending: false });
+  if (error) throw error;
+  lectures = (data || []).map(lectureFromRow);
+}
+
+async function saveLecture(lecture, editing) {
+  if (usesLocalFallback) {
+    throw new Error('إضافة المحاضرات وتعديلها يتطلبان إعداد Supabase وتسجيل دخول المشرف.');
+  }
+
+  if (!supabaseClient || !isAdminAuthenticated()) {
+    throw new Error('يجب تسجيل الدخول بحساب المشرف قبل حفظ المحاضرات.');
+  }
+
+  const query = editing
+    ? supabaseClient.from(SUPABASE_TABLE).update(lectureToRow(lecture)).eq('id', lecture.id)
+    : supabaseClient.from(SUPABASE_TABLE).insert(lectureToRow(lecture));
+  const { data, error } = await query.select('*').single();
+  if (error) throw error;
+  const saved = lectureFromRow(data);
+  lectures = editing
+    ? lectures.map(item => item.id === saved.id ? saved : item)
+    : [saved, ...lectures];
+  return saved;
+}
+
+async function removeLecture(id) {
+  if (usesLocalFallback) {
+    throw new Error('حذف المحاضرات يتطلب إعداد Supabase وتسجيل دخول المشرف.');
+  }
+
+  if (!supabaseClient || !isAdminAuthenticated()) {
+    throw new Error('يجب تسجيل الدخول بحساب المشرف قبل حذف المحاضرات.');
+  }
+
+  const { data, error } = await supabaseClient
+    .from(SUPABASE_TABLE)
+    .delete()
+    .eq('id', Number(id))
+    .select('id')
+    .single();
+  if (error) throw error;
+  if (!data) throw new Error('لم يتم حذف المحاضرة؛ تحقق من صلاحيات قاعدة البيانات.');
+  lectures = lectures.filter(item => item.id !== Number(id));
 }
 
 function toAr(n) {
@@ -136,10 +245,27 @@ function makeCard(x) {
       <div class="meta">${x.speaker} · ${x.date}</div>
       <p class="desc">${x.desc}</p>
       <div class="card-foot">
-        <button class="watch" data-detail="${x.id}" data-viewmode="${currentFilter}">عرض المحاضرة ←</button>
+        <a class="watch" href="#lecture/${x.id}" data-detail="${x.id}" data-viewmode="${currentFilter}">عرض المحاضرة ←</a>
       </div>
     </div>
   </article>`;
+}
+
+function getLectureUrl(id, viewMode = '') {
+  const suffix = viewMode === 'مرئية' || viewMode === 'صوتية'
+    ? `?viewmode=${encodeURIComponent(viewMode)}`
+    : '';
+  return `${window.location.href.split('#')[0]}#lecture/${encodeURIComponent(id)}${suffix}`;
+}
+
+async function copyLectureLink(id) {
+  const url = getLectureUrl(id);
+  try {
+    await navigator.clipboard.writeText(url);
+    showToast('🔗 تم نسخ رابط المحاضرة');
+  } catch (error) {
+    window.prompt('انسخ رابط المحاضرة:', url);
+  }
 }
 
 // ── تحديث الإحصائيات ──
@@ -377,6 +503,25 @@ function getSoundCloudEmbed(url) {
 }
 
 // ── دالة تحليل وتنسيق الملخص (Markdown & Tables Parser) ──
+function escapeHtmlAttribute(value) {
+  return String(value).replace(/[&<>"']/g, char => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;'
+  })[char]);
+}
+
+function getSafeMarkdownUrl(value) {
+  try {
+    const url = new URL(value);
+    return url.protocol === 'http:' || url.protocol === 'https:' ? url.href : '';
+  } catch {
+    return '';
+  }
+}
+
 function parseMarkdown(text) {
   if (!text) return '';
   
@@ -425,6 +570,13 @@ function parseMarkdown(text) {
 
   let parsed = resultLines.join('\n');
 
+  parsed = parsed.replace(/!\[([^\]]*)\]\((https?:\/\/[^\s)]+)\)/g, (match, alt, rawUrl) => {
+    const url = getSafeMarkdownUrl(rawUrl);
+    if (!url) return match;
+    const caption = alt ? `<figcaption>${escapeHtmlAttribute(alt)}</figcaption>` : '';
+    return `<figure class="summary-image"><img src="${escapeHtmlAttribute(url)}" alt="${escapeHtmlAttribute(alt)}" loading="lazy">${caption}</figure>`;
+  });
+
   // العناوين ## و ###
   parsed = parsed.replace(/^### (.*$)/gim, '<h3>$1</h3>');
   parsed = parsed.replace(/^## (.*$)/gim, '<h3>$1</h3>');
@@ -432,7 +584,22 @@ function parseMarkdown(text) {
   // الخط العريض والمائل
   parsed = parsed.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
   parsed = parsed.replace(/\*(.*?)\*/g, '<em>$1</em>');
-  
+
+  parsed = parsed.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, (match, label, rawUrl) => {
+    const url = getSafeMarkdownUrl(rawUrl);
+    if (!url) return match;
+    return `<a href="${escapeHtmlAttribute(url)}" target="_blank" rel="noopener noreferrer">${escapeHtmlAttribute(label)}</a>`;
+  });
+
+  parsed = parsed.replace(/^(?:[-*] .+(?:\n|$))+/gm, block => {
+    const items = block.trim().split('\n').map(line => `<li>${line.replace(/^[-*]\s+/, '')}</li>`).join('');
+    return `<ul>${items}</ul>`;
+  });
+  parsed = parsed.replace(/^(?:\d+[.)] .+(?:\n|$))+/gm, block => {
+    const items = block.trim().split('\n').map(line => `<li>${line.replace(/^\d+[.)]\s+/, '')}</li>`).join('');
+    return `<ol>${items}</ol>`;
+  });
+
   // الاقتباسات >
   parsed = parsed.replace(/^> (.*$)/gim, '<blockquote>$1</blockquote>');
 
@@ -441,11 +608,77 @@ function parseMarkdown(text) {
   return blocks.map(b => {
     b = b.trim();
     if (!b) return '';
-    if (b.startsWith('<div class="table-wrapper"') || b.startsWith('<h3>') || b.startsWith('<blockquote>')) {
+    if (b.startsWith('<div class="table-wrapper"') || b.startsWith('<figure class="summary-image"') || b.startsWith('<ul>') || b.startsWith('<ol>') || b.startsWith('<h3>') || b.startsWith('<blockquote>')) {
       return b;
     }
     return `<p>${b.replace(/\n/g, '<br>')}</p>`;
   }).join('');
+}
+
+function updateSummaryPreview() {
+  const input = document.getElementById('fSummary');
+  const preview = document.getElementById('summaryPreview');
+  if (!input || !preview) return;
+
+  preview.innerHTML = input.value.trim()
+    ? parseMarkdown(input.value)
+    : '<span class="hint">ستظهر المعاينة هنا أثناء الكتابة.</span>';
+}
+
+function replaceSummarySelection(textarea, value, selectionStart, selectionEnd) {
+  const start = textarea.selectionStart;
+  textarea.setRangeText(value, start, textarea.selectionEnd, 'end');
+  textarea.setSelectionRange(start + selectionStart, start + selectionEnd);
+  textarea.focus();
+  textarea.dispatchEvent(new Event('input', { bubbles: true }));
+}
+
+function applySummaryFormat(format, textarea) {
+  const start = textarea.selectionStart;
+  const end = textarea.selectionEnd;
+  const selected = textarea.value.slice(start, end);
+
+  if (format === 'bold' || format === 'italic') {
+    const marker = format === 'bold' ? '**' : '*';
+    const content = selected || (format === 'bold' ? 'نص عريض' : 'نص مائل');
+    const replacement = `${marker}${content}${marker}`;
+    replaceSummarySelection(textarea, replacement, marker.length, marker.length + content.length);
+    return;
+  }
+
+  if (format === 'heading') {
+    const content = selected || 'عنوان فرعي';
+    const replacement = `## ${content}`;
+    replaceSummarySelection(textarea, replacement, 3, replacement.length);
+    return;
+  }
+
+  if (format === 'list' || format === 'quote') {
+    const prefix = format === 'list' ? '- ' : '> ';
+    const content = selected || (format === 'list' ? 'نقطة جديدة' : 'نص الاقتباس');
+    const replacement = content.split('\n').map(line => `${prefix}${line}`).join('\n');
+    replaceSummarySelection(textarea, replacement, 0, replacement.length);
+    return;
+  }
+
+  if (format === 'link' || format === 'image') {
+    if (format === 'image') {
+      document.getElementById('summaryImageUrl')?.focus();
+      return;
+    }
+
+    const url = window.prompt('أدخل رابط الصفحة:');
+    if (!url) return;
+    const safeUrl = getSafeMarkdownUrl(url.trim());
+    if (!safeUrl) {
+      showToast('أدخل رابطاً صحيحاً يبدأ بـ https:// أو http://.', 5000);
+      return;
+    }
+
+    const label = selected || 'نص الرابط';
+    const replacement = `[${label.replace(/[\]]/g, '')}](${safeUrl})`;
+    replaceSummarySelection(textarea, replacement, 1, 1 + label.length);
+  }
 }
 
 // ── صفحة التفاصيل ──
@@ -551,6 +784,7 @@ function showDetail(id, viewMode = '') {
       </a>`;
   }
 
+  actions.innerHTML += `<button type="button" class="btn-outline admin-only" style="border-color:var(--gold);color:var(--gold);cursor:pointer;" onclick="copyLectureLink(${x.id})">📋 نسخ الرابط</button>`;
   actions.innerHTML += `<button type="button" class="btn-outline admin-only" style="border-color:var(--gold);color:var(--gold);cursor:pointer;" onclick="editLecture(${x.id})">✏️ تعديل المادة</button>`;
   actions.innerHTML += `<button type="button" class="btn-outline admin-only" style="border-color:#e53e3e;color:#e53e3e;cursor:pointer;" onclick="deleteLecture(${x.id})">🗑️ حذف</button>`;
 
@@ -569,6 +803,42 @@ function show(view) {
   if (view === 'archive') renderArchive();
   if (view === 'speakers-page') { renderSpeakers('speakersGrid'); renderSpeakers('allSpeakersGrid'); }
 }
+// Routing initialization
+let updatingHash = false;
+
+function handleHashChange() {
+  if (updatingHash) return;
+  const hash = location.hash.substring(1); // remove leading #
+
+  // Check for lecture detail
+  const lectureMatch = hash.match(/^lecture\/(\d+)(?:\?viewmode=([^&]*))?$/);
+  if (lectureMatch) {
+    const id = lectureMatch[1];
+    const viewMode = lectureMatch[2] || '';
+    showDetail(id, viewMode);
+    return;
+  }
+
+  // Map hash to view
+  let view = 'home'; // default
+  if (hash === 'archive') {
+    view = 'archive';
+  } else if (hash === 'speakers-page') {
+    view = 'speakers-page';
+  } else if (hash === 'about-page') {
+    view = 'about-page';
+  } else if (hash === '' || hash === 'home') {
+    view = 'home';
+  }
+  // For other hashes, default to home
+
+  show(view);
+}
+
+// Initial call
+handleHashChange();
+
+window.addEventListener('hashchange', handleHashChange);
 
 function showToast(msg, dur = 3000) {
   const t = document.getElementById('toast');
@@ -577,11 +847,9 @@ function showToast(msg, dur = 3000) {
   setTimeout(() => t.classList.remove('show'), dur);
 }
 
-// ── نظام حماية الإدارة وكلمة المرور (Admin Security) ──
-const ADMIN_STORAGE_KEY = 'saadat_admin_auth';
-
+// ── مصادقة المشرف عبر Supabase ──
 function isAdminAuthenticated() {
-  return sessionStorage.getItem(ADMIN_STORAGE_KEY) === 'true';
+  return supabaseSession?.user?.app_metadata?.role === 'admin';
 }
 
 function updateAdminUI() {
@@ -613,37 +881,58 @@ function updateAdminUI() {
   }
 }
 
-function toggleAdminSession() {
+async function toggleAdminSession() {
   if (isAdminAuthenticated()) {
     if (confirm('هل ترغب في تسجيل خروج المشرف وإخفاء لوحة التحكم؟')) {
-      sessionStorage.removeItem(ADMIN_STORAGE_KEY);
-      updateAdminUI();
-      showToast('🔒 تم تسجيل الخروج بنجاح');
+      try {
+        const { error } = await supabaseClient.auth.signOut();
+        if (error) throw error;
+        supabaseSession = null;
+        updateAdminUI();
+        showToast('🔒 تم تسجيل الخروج بنجاح');
+      } catch (error) {
+        showToast(`تعذر تسجيل الخروج: ${error.message}`, 6000);
+        return;
+      }
     }
     return;
   }
-  requireAdminAuth();
+  await requireAdminAuth();
 }
 
-function requireAdminAuth(callback) {
+async function requireAdminAuth(callback) {
   if (isAdminAuthenticated()) {
     updateAdminUI();
     if (callback) callback();
     return;
   }
-  
-  const password = prompt('🔒 لوحة الإدارة محمية\nيرجى إدخال كلمة مرور المشرف (Admin Password):');
+
+  if (!supabaseClient) {
+    showToast('تسجيل دخول المشرف يتطلب إعداد Supabase في config.js.', 6000);
+    return;
+  }
+
+  const email = prompt('أدخل البريد الإلكتروني لحساب المشرف في Supabase:');
+  if (!email) return;
+  const password = prompt('أدخل كلمة مرور حساب المشرف:');
   if (!password) return;
 
-  // كلمة المرور للمشرف
-  if (password === '222666') {
-    sessionStorage.setItem(ADMIN_STORAGE_KEY, 'true');
-    updateAdminUI();
-    showToast('🔓 مرحباً بك أيها المشرف');
-    if (callback) callback();
-  } else {
-    alert('❌ كلمة المرور غير صحيحة!');
+  try {
+    const { data, error } = await supabaseClient.auth.signInWithPassword({ email, password });
+    if (error) throw error;
+    if (data.session?.user?.app_metadata?.role !== 'admin') {
+      await supabaseClient.auth.signOut();
+      showToast('هذا الحساب غير مخوّل لإدارة المحاضرات.', 6000);
+      return;
+    }
+    supabaseSession = data.session;
+  } catch (error) {
+    showToast(`تعذر تسجيل الدخول: ${error.message}`, 6000);
+    return;
   }
+  updateAdminUI();
+  showToast('🔓 تم تسجيل الدخول بنجاح');
+  if (callback) callback();
 }
 
 function openAdmin()  { 
@@ -655,6 +944,7 @@ function openAdmin()  {
     if (editIdInput) editIdInput.value = '';
     const form = document.getElementById('adminForm');
     if (form) form.reset();
+    updateSummaryPreview();
 
     const overlay = document.getElementById('adminOverlay');
     if (overlay) {
@@ -664,8 +954,8 @@ function openAdmin()  {
   });
 }
 
-function editLecture(id) {
-  requireAdminAuth(() => {
+async function editLecture(id) {
+  await requireAdminAuth(() => {
     const L = getLectures();
     const x = L.find(l => l.id === Number(id));
     if (!x) return;
@@ -685,6 +975,7 @@ function editLecture(id) {
     setVal('fImage', x.image);
     setVal('fDesc', x.desc);
     setVal('fSummary', x.summary || x.desc);
+    updateSummaryPreview();
     setVal('fPoints', (x.points || []).join('\n'));
     setVal('fKeywords', x.keywords);
     setVal('fVideoUrl', x.videoUrl);
@@ -698,18 +989,29 @@ function editLecture(id) {
   });
 }
 
-function deleteLecture(id) {
-  requireAdminAuth(() => {
+async function deleteLecture(id) {
+  await requireAdminAuth(async () => {
     if (!confirm('هل أنت متأكد من رغبتك في حذف هذه المحاضرة نهائياً؟')) return;
-    let L = getLectures();
-    L = L.filter(l => l.id !== Number(id));
-    saveLectures(L);
-    showToast('🗑️ تم حذف المحاضرة بنجاح');
+    try {
+      await removeLecture(id);
+      showToast('🗑️ تم حذف المحاضرة بنجاح');
+    } catch (error) {
+      console.error('Failed to delete lecture:', error);
+      showToast(`تعذر حذف المحاضرة: ${error.message}`, 7000);
+      return;
+    }
     show('home');
-    updateStats();
-    renderLatest();
-    renderArchive();
+    refreshLectureViews();
   });
+}
+
+function refreshLectureViews() {
+  updateStats();
+  renderLatest();
+  renderArchive();
+  renderSpeakers('speakersGrid');
+  renderSpeakers('allSpeakersGrid');
+  handleHashChange();
 }
 
 function closeAdmin() { 
@@ -771,60 +1073,85 @@ function initializeApp() {
 
   // Admin Form
   const adminForm = document.getElementById('adminForm');
-  if (adminForm) {
-    adminForm.addEventListener('submit', e => {
-      e.preventDefault();
-      const v = id => document.getElementById(id).value.trim();
-      let L = getLectures();
-      const editId = v('fEditId');
-
-      if (editId) {
-        // تعديل مادة موجودة
-        const index = L.findIndex(l => l.id === Number(editId));
-        if (index !== -1) {
-          L[index] = {
-            ...L[index],
-            title: v('fTitle'),
-            speaker: v('fSpeaker'),
-            date: v('fDate') || L[index].date,
-            category: v('fCategory') || L[index].category,
-            type: v('fType'),
-            duration: v('fDuration') || L[index].duration,
-            image: v('fImage') || L[index].image,
-            desc: v('fDesc'),
-            summary: v('fSummary') || v('fDesc'),
-            points: v('fPoints').split('\n').filter(Boolean),
-            keywords: v('fKeywords'),
-            videoUrl: v('fVideoUrl'),
-            audioUrl: v('fAudioUrl')
-          };
-          saveLectures(L);
-          showToast('✏️ تم تعديل المادة بنجاح!');
-          showDetail(editId);
-        }
-      } else {
-        // إضافة مادة جديدة
-        const newId = L.length ? Math.max(...L.map(l => l.id)) + 1 : 1;
-        const newLecture = {
-          id: newId, title: v('fTitle'), speaker: v('fSpeaker'),
-          date: v('fDate') || new Date().toLocaleDateString('ar-SA'),
-          category: v('fCategory') || 'شرح جامع السعادات',
-          type: v('fType'), duration: v('fDuration') || '—',
-          image: v('fImage') || 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?auto=format&fit=crop&w=800&q=80',
-          desc: v('fDesc'), summary: v('fSummary') || v('fDesc'),
-          points: v('fPoints').split('\n').filter(Boolean),
-          keywords: v('fKeywords'), videoUrl: v('fVideoUrl'), audioUrl: v('fAudioUrl')
-        };
-        L.unshift(newLecture);
-        saveLectures(L);
-        showToast('✅ تم حفظ المادة بنجاح!');
+  const summaryInput = document.getElementById('fSummary');
+  const formatToolbar = document.querySelector('.format-toolbar');
+  const insertSummaryImageButton = document.getElementById('insertSummaryImage');
+  if (summaryInput) summaryInput.addEventListener('input', updateSummaryPreview);
+  if (formatToolbar && summaryInput) {
+    formatToolbar.addEventListener('click', event => {
+      const button = event.target.closest('[data-format]');
+      if (!button) return;
+      applySummaryFormat(button.dataset.format, summaryInput);
+    });
+  }
+  if (insertSummaryImageButton && summaryInput) {
+    insertSummaryImageButton.addEventListener('click', () => {
+      const urlInput = document.getElementById('summaryImageUrl');
+      const altInput = document.getElementById('summaryImageAlt');
+      const safeUrl = getSafeMarkdownUrl(urlInput.value.trim());
+      const alt = altInput.value.trim();
+      if (!safeUrl) {
+        showToast('أدخل رابط صورة صحيحاً يبدأ بـ https:// أو http://.', 5000);
+        urlInput.focus();
+        return;
+      }
+      if (!alt) {
+        showToast('أضف وصفاً قصيراً للصورة لمساعدة قارئات الشاشة.', 5000);
+        altInput.focus();
+        return;
       }
 
-      e.target.reset();
-      closeAdmin();
-      updateStats();
-      renderLatest();
-      renderArchive();
+      const markdownImage = `![${alt.replace(/[\]]/g, '')}](${safeUrl})`;
+      const replacement = `\n\n${markdownImage}\n\n`;
+      replaceSummarySelection(summaryInput, replacement, 2, 2 + markdownImage.length);
+      urlInput.value = '';
+      altInput.value = '';
+    });
+  }
+  updateSummaryPreview();
+
+  if (adminForm) {
+    adminForm.addEventListener('submit', async e => {
+      e.preventDefault();
+      const form = e.currentTarget;
+      const v = id => document.getElementById(id).value.trim();
+      const editId = v('fEditId');
+      const existing = editId ? lectures.find(item => item.id === Number(editId)) : null;
+      if (editId && !existing) {
+        showToast('لم يتم العثور على المحاضرة المطلوب تعديلها.', 6000);
+        return;
+      }
+
+      const lecture = {
+        ...(existing || {}),
+        id: existing ? existing.id : (lectures.length ? Math.max(...lectures.map(item => item.id)) + 1 : 1),
+        title: v('fTitle'),
+        speaker: v('fSpeaker'),
+        date: v('fDate') || (existing && existing.date) || new Date().toLocaleDateString('ar-SA'),
+        category: v('fCategory') || (existing && existing.category) || 'شرح جامع السعادات',
+        type: v('fType'),
+        duration: v('fDuration') || (existing && existing.duration) || '—',
+        image: v('fImage') || (existing && existing.image) || 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?auto=format&fit=crop&w=800&q=80',
+        desc: v('fDesc'),
+        summary: v('fSummary') || v('fDesc'),
+        points: v('fPoints').split('\n').filter(Boolean),
+        keywords: v('fKeywords'),
+        videoUrl: v('fVideoUrl'),
+        audioUrl: v('fAudioUrl')
+      };
+
+      try {
+        const saved = await saveLecture(lecture, Boolean(editId));
+        showToast(editId ? '✏️ تم تعديل المادة بنجاح!' : '✅ تم حفظ المادة بنجاح!');
+        form.reset();
+        updateSummaryPreview();
+        closeAdmin();
+        refreshLectureViews();
+        if (editId) showDetail(saved.id);
+      } catch (error) {
+        console.error('Failed to save lecture:', error);
+        showToast(`تعذر حفظ المحاضرة: ${error.message}`, 7000);
+      }
     });
   }
 
@@ -834,7 +1161,11 @@ function initializeApp() {
     const detailBtn = e.target.closest('[data-detail]');
     if (detailBtn) { 
       e.preventDefault(); 
-      showDetail(detailBtn.dataset.detail, detailBtn.dataset.viewmode || ''); 
+      const id = detailBtn.dataset.detail;
+      const viewMode = detailBtn.dataset.viewmode || '';
+      const hash = `#lecture/${encodeURIComponent(id)}${viewMode === 'مرئية' || viewMode === 'صوتية' ? `?viewmode=${encodeURIComponent(viewMode)}` : ''}`;
+      if (window.location.hash === hash) showDetail(id, viewMode);
+      else window.location.hash = hash;
       return; 
     }
     const pageLink = e.target.closest('[data-page]');
@@ -906,12 +1237,27 @@ function initializeApp() {
   }
 
   // ── التهيئة ──
-  updateStats();
-  renderLatest();
-  renderSpeakers('speakersGrid');
-  renderArchive();
-  
-  console.log('✅ All initialization complete!');
+  lectures = [];
+  refreshLectureViews();
+  loadLectures().then(() => {
+    if (supabaseClient) {
+      supabaseClient.auth.onAuthStateChange((_event, session) => {
+        supabaseSession = session?.user?.app_metadata?.role === 'admin' ? session : null;
+        updateAdminUI();
+      });
+      return supabaseClient.auth.getSession().then(({ data, error }) => {
+        if (error) throw error;
+        supabaseSession = data.session?.user?.app_metadata?.role === 'admin' ? data.session : null;
+        updateAdminUI();
+      });
+    }
+  }).then(() => {
+    refreshLectureViews();
+    console.log('✅ All initialization complete!');
+  }).catch(error => {
+    console.error('Failed to initialize Supabase data or authentication:', error);
+    showToast(`تعذر تحميل بيانات المحاضرات أو تهيئة الدخول: ${error.message}`, 7000);
+  });
 } // إغلاق دالة initializeApp
 
 // ── تشغيل التطبيق ──
@@ -924,6 +1270,3 @@ if (document.readyState === 'loading') {
   console.log('⚡ DOM already loaded, initializing immediately...');
   initializeApp();
 }
-
-
-

@@ -69,7 +69,7 @@
       </div>
       <div class="hero-art">
         <img class="hero-photo"
-          src="https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?auto=format&fit=crop&w=800&q=80"
+          src="https://drive.google.com/uc?export=view&id=1xgQIiicuOoz764fdENIyw7ZzWQFQhdvz"
           alt="كتب إسلامية">
         <div class="stamp">
           <b id="totalCount">٠</b>
@@ -392,8 +392,29 @@
             <textarea id="fDesc" rows="2" placeholder="وصف قصير يظهر في بطاقة المحاضرة…" required></textarea>
           </div>
           <div class="field form-full">
-            <label>الملخص الكامل</label>
-            <textarea id="fSummary" rows="3" placeholder="ملخص تفصيلي للمحاضرة…"></textarea>
+            <label for="fSummary">الملخص الكامل</label>
+            <div class="format-toolbar" role="toolbar" aria-label="تنسيق الملخص">
+              <button type="button" data-format="bold" aria-label="خط عريض" title="خط عريض"><strong>B</strong></button>
+              <button type="button" data-format="italic" aria-label="خط مائل" title="خط مائل"><em>I</em></button>
+              <button type="button" data-format="heading" aria-label="عنوان فرعي" title="عنوان فرعي">عنوان</button>
+              <button type="button" data-format="list" aria-label="قائمة نقطية" title="قائمة نقطية">• قائمة</button>
+              <button type="button" data-format="quote" aria-label="اقتباس" title="اقتباس">❝ اقتباس</button>
+              <button type="button" data-format="link" aria-label="إضافة رابط" title="إضافة رابط">🔗 رابط</button>
+              <button type="button" data-format="image" aria-label="إدراج صورة" title="إدراج صورة">🖼️ صورة</button>
+            </div>
+            <textarea id="fSummary" rows="7" placeholder="اكتب ملخص المحاضرة هنا، واستخدم الأزرار لإضافة التنسيق والصور…"></textarea>
+            <div class="image-embed-controls">
+              <input type="url" id="summaryImageUrl" placeholder="رابط الصورة المباشر (https://...)" aria-label="رابط الصورة المراد إدراجها">
+              <input type="text" id="summaryImageAlt" placeholder="وصف الصورة (مطلوب)" aria-label="وصف الصورة">
+              <button type="button" id="insertSummaryImage">إدراج الصورة في الملخص</button>
+            </div>
+            <span class="hint">يمكن إدراج صورة باستخدام رابطها المباشر. ستظهر معاينة للتنسيق قبل الحفظ.</span>
+            <div class="summary-preview-wrap">
+              <div class="summary-preview-title">معاينة الملخص</div>
+              <div id="summaryPreview" class="summary-preview" aria-live="polite">
+                <span class="hint">ستظهر المعاينة هنا أثناء الكتابة.</span>
+              </div>
+            </div>
           </div>
           <div class="field form-full">
             <label>أبرز النقاط (كل نقطة في سطر منفصل)</label>
@@ -425,7 +446,8 @@
   </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
-
