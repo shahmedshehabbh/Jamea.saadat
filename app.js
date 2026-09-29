@@ -295,7 +295,7 @@ function renderLatest() {
 const SPEAKERS_DATA = {
   'الشيخ أحمد الشهابي': {
     name: 'سماحة الشَّيْخُ أَحْمَدُ الشَّهَابِيُ (حفظه الله)',
-    photo: 'https://lh3.googleusercontent.com/d/1FIJreLO0ClW6ksKZcelBmd6UjTVANaCb',
+    photo: 'https://drive.google.com/thumbnail?id=1FIJreLO0ClW6ksKZcelBmd6UjTVANaCb&sz=w800',
     title: 'أستاذ الحوزة العلمية ومفسر القرآن الكريم',
     origin: 'البحرين - الدراز',
     sections: [
@@ -735,17 +735,14 @@ function showDetail(id, viewMode = '') {
       </div>`;
   } else if (x.videoUrl && x.audioUrl) {
     // المادة تحتوي على فيديو وصوت معاً ومعروضة من الأرشيف العام أو كدرس شامل
-    media.className = 'detail-media';
+    media.className = 'detail-media media-with-audio';
     const embedUrl = getYouTubeEmbedUrl(x.videoUrl);
     media.innerHTML = `
-      <div style="display:flex;flex-direction:column;width:100%;height:100%;">
-        <div style="flex:1;min-height:380px;">
-          <iframe src="${embedUrl}" frameborder="0" allowfullscreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" style="width:100%;height:100%;"></iframe>
+        <div class="media-video">
+          <iframe src="${embedUrl}" frameborder="0" allowfullscreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"></iframe>
         </div>
-        <div style="background:#f4f9f6;padding:16px 20px;border-top:2px solid var(--gold);">
-          <div style="font-size:13px;font-weight:700;color:var(--green);margin-bottom:8px;display:flex;align-items:center;gap:6px;">
-            <span>🎧 الاستماع للتسجيل الصوتي (SoundCloud / Audio):</span>
-          </div>
+        <div class="media-audio-panel">
+          <div class="media-audio-title">🎧 الاستماع للتسجيل الصوتي (SoundCloud / Audio):</div>
           ${getSoundCloudEmbed(x.audioUrl)}
         </div>
       </div>`;
