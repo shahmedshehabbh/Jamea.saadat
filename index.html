@@ -58,14 +58,14 @@
         <h1>شرح كتاب<br><em>جامع السعادات</em></h1>
         <p>سلسلة محاضرات في شرح كتاب جامع السعادات — مع سماحة الشيخ أحمد الشهابي مرتّبة ومفهرسة لسهولة البحث والاستفادة.</p>
         <form class="search" id="heroSearch">
-          <input type="text" placeholder="البحث في المواضيع أو الدروس…" aria-label="بحث">
+          <input type="text" placeholder="ابحث في العناوين والملخصات ومحتوى الدروس…" aria-label="بحث">
           <button type="submit">بحث 🔍</button>
         </form>
       </div>
       <div class="hero-art">
         <img class="hero-photo"
           src="https://drive.google.com/uc?export=view&id=1xgQIiicuOoz764fdENIyw7ZzWQFQhdvz"
-          alt="كتب إسلامية">
+          alt="">
         <div class="stamp">
           <b id="totalCount">٠</b>
           <span>محاضرة متاحة</span>
@@ -152,7 +152,7 @@
       </div>
       <div class="archive-tools">
         <form class="search" id="archiveSearch" style="flex:1;max-width:none">
-          <input type="text" placeholder="البحث في المواضيع أو الدروس…">
+          <input type="text" placeholder="ابحث في العناوين والملخصات ومحتوى الدروس…">
           <button type="submit">بحث</button>
         </form>
         <select id="typeFilter">
@@ -396,6 +396,9 @@
               <button type="button" data-format="quote" aria-label="اقتباس" title="اقتباس">❝ اقتباس</button>
               <button type="button" data-format="link" aria-label="إضافة رابط" title="إضافة رابط">🔗 رابط</button>
               <button type="button" data-format="image" aria-label="إدراج صورة" title="إدراج صورة">🖼️ صورة</button>
+              <button type="button" data-format="table" aria-label="إدراج جدول" title="إدراج جدول">▦ جدول</button>
+              <button type="button" data-format="auto" aria-label="تنسيق تلقائي" title="تنسيق تلقائي">✨ تنسيق تلقائي</button>
+              <button type="button" id="formatWithGemini" class="ai-format-button" aria-label="تحسين التنسيق باستخدام Gemini" title="إرسال الملخص إلى Gemini لترتيبه">✨ تحسين بـ Gemini</button>
             </div>
             <textarea id="fSummary" rows="7" placeholder="اكتب ملخص المحاضرة هنا، واستخدم الأزرار لإضافة التنسيق والصور…"></textarea>
             <div class="image-embed-controls">
@@ -403,7 +406,7 @@
               <input type="text" id="summaryImageAlt" placeholder="وصف الصورة (مطلوب)" aria-label="وصف الصورة">
               <button type="button" id="insertSummaryImage">إدراج الصورة في الملخص</button>
             </div>
-            <span class="hint">يمكن إدراج صورة باستخدام رابطها المباشر. ستظهر معاينة للتنسيق قبل الحفظ.</span>
+            <span class="hint">تُقبل روابط الصور المباشرة وروابط مشاركة Google Drive. عند اختيار Gemini يُرسل الملخص إلى Google. في الاستخدام المجاني قد تُستخدم البيانات لتحسين منتجات Google؛ راجع النتيجة قبل الحفظ.</span>
             <div class="summary-preview-wrap">
               <div class="summary-preview-title">معاينة الملخص</div>
               <div id="summaryPreview" class="summary-preview" aria-live="polite">

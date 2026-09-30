@@ -416,6 +416,17 @@ function closeSpeakerBio() {
 let currentPage = 1;
 const PER_PAGE = 9;
 
+function normalizeSearchText(text) {
+  return String(text || '')
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/&nbsp;|&#160;/gi, ' ')
+    .normalize('NFKD')
+    .replace(/[\u064B-\u065F\u0670\u0640]/g, '')
+    .toLocaleLowerCase('ar')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 function renderArchive() {
   const L    = getLectures();
   const q    = (document.querySelector('#archiveSearch input')?.value || '').toLowerCase();
@@ -424,7 +435,15 @@ function renderArchive() {
   const sort = document.getElementById('sortFilter')?.value || 'newest';
 
   let found = L.filter(x => {
-    const text = [x.title, x.speaker, x.category, x.keywords, x.desc].join(' ').toLowerCase();
+    const text = normalizeSearchText([
+      x.title,
+      x.speaker,
+      x.category,
+      x.keywords,
+      x.desc,
+      x.summary,
+      ...(Array.isArray(x.points) ? x.points : [])
+    ].join(' '));
     
     // مطابقة النوع بذكاء:
     // إذا اختار "مرئية"، يجلب المواد المرئية + أي درس يحتوي على فيديو
@@ -438,7 +457,7 @@ function renderArchive() {
       matchesType = x.type === type;
     }
 
-    return (!q || text.includes(q)) && matchesType && (!cat || x.category.includes(cat));
+    return (!q || text.includes(normalizeSearchText(q))) && matchesType && (!cat || x.category.includes(cat));
   });
 
   if (sort === 'oldest') found = [...found].reverse();
@@ -523,6 +542,23 @@ function getSafeMarkdownUrl(value) {
   }
 }
 
+function getMarkdownImageUrl(value) {
+  const safeUrl = getSafeMarkdownUrl(value);
+  if (!safeUrl) return '';
+  try {
+    const url = new URL(safeUrl);
+    if (url.hostname === 'drive.google.com') {
+      const fileId = url.pathname.match(/\/file\/d\/([^/]+)/)?.[1] || url.searchParams.get('id');
+      if (fileId) {
+        return `https://drive.google.com/thumbnail?id=${encodeURIComponent(fileId)}&sz=w1200`;
+      }
+    }
+    return safeUrl;
+  } catch {
+    return '';
+  }
+}
+
 function parseMarkdown(text) {
   if (!text) return '';
   
@@ -572,7 +608,7 @@ function parseMarkdown(text) {
   let parsed = resultLines.join('\n');
 
   parsed = parsed.replace(/!\[([^\]]*)\]\((https?:\/\/[^\s)]+)\)/g, (match, alt, rawUrl) => {
-    const url = getSafeMarkdownUrl(rawUrl);
+    const url = getMarkdownImageUrl(rawUrl);
     if (!url) return match;
     const caption = alt ? `<figcaption>${escapeHtmlAttribute(alt)}</figcaption>` : '';
     return `<figure class="summary-image"><img src="${escapeHtmlAttribute(url)}" alt="${escapeHtmlAttribute(alt)}" loading="lazy">${caption}</figure>`;
@@ -634,6 +670,88 @@ function replaceSummarySelection(textarea, value, selectionStart, selectionEnd) 
   textarea.dispatchEvent(new Event('input', { bubbles: true }));
 }
 
+function autoFormatSummary(text) {
+  const lines = text.replace(/\r\n?/g, '\n').split('\n');
+  const output = [];
+  let previousWasList = false;
+
+  for (let index = 0; index < lines.length; index++) {
+    const line = lines[index].trim();
+    if (!line) {
+      if (output.length && output[output.length - 1] !== '') output.push('');
+      previousWasList = false;
+      continue;
+    }
+
+    if (/^(?:#{1,3}\s|>\s|[-*]\s|\d+[.)]\s|\|.*\|)/.test(line)) {
+      output.push(line);
+      previousWasList = /^([-*]\s|\d+[.)]\s)/.test(line);
+      continue;
+    }
+
+    const nextLine = lines.slice(index + 1).find(candidate => candidate.trim());
+    const looksLikeHeading = line.length <= 80 && (line.endsWith(':') || line.endsWith('：'));
+    const firstLineLooksLikeTitle = output.length === 0 && nextLine && line.length <= 70 && !/[.!؟،؛]$/.test(line);
+    if (looksLikeHeading || firstLineLooksLikeTitle) {
+      output.push(`## ${line.replace(/[:：]$/, '')}`);
+      previousWasList = false;
+      continue;
+    }
+
+    const item = line.match(/^(?:[-*•]\s*|\d+[.)]\s*)(.+)$/);
+    if (item) {
+      output.push(`- ${item[1]}`);
+      previousWasList = true;
+      continue;
+    }
+
+    if (previousWasList) output.push('');
+    output.push(line);
+    previousWasList = false;
+  }
+
+  return output.join('\n').replace(/\n{3,}/g, '\n\n').trim();
+}
+
+async function improveSummaryWithGemini(button) {
+  const textarea = document.getElementById('fSummary');
+  if (!textarea || !supabaseClient) {
+    showToast('يلزم إعداد Supabase قبل استخدام Gemini.', 5000);
+    return;
+  }
+  if (!isAdminAuthenticated()) {
+    showToast('سجّل الدخول بحساب المشرف لاستخدام Gemini.', 5000);
+    return;
+  }
+  if (!textarea.value.trim()) {
+    showToast('أدخل نص الملخص أولاً.', 4000);
+    textarea.focus();
+    return;
+  }
+
+  const originalLabel = button.textContent;
+  button.disabled = true;
+  button.textContent = 'جارٍ التحسين…';
+  try {
+    const { data, error } = await supabaseClient.functions.invoke('format-summary', {
+      body: { text: textarea.value }
+    });
+    if (error) throw error;
+    if (!data || typeof data.text !== 'string' || !data.text.trim()) {
+      throw new Error('لم تُرجع خدمة Gemini نصاً صالحاً.');
+    }
+    textarea.value = data.text.trim();
+    textarea.dispatchEvent(new Event('input', { bubbles: true }));
+    showToast('تم ترتيب النص بواسطة Gemini. راجع المعلومات ثم احفظ التغييرات.');
+  } catch (error) {
+    console.error('Gemini summary formatting failed:', error);
+    showToast(`تعذر تحسين الملخص: ${error.message}`, 7000);
+  } finally {
+    button.disabled = false;
+    button.textContent = originalLabel;
+  }
+}
+
 function applySummaryFormat(format, textarea) {
   const start = textarea.selectionStart;
   const end = textarea.selectionEnd;
@@ -651,6 +769,32 @@ function applySummaryFormat(format, textarea) {
     const content = selected || 'عنوان فرعي';
     const replacement = `## ${content}`;
     replaceSummarySelection(textarea, replacement, 3, replacement.length);
+    return;
+  }
+
+  if (format === 'table') {
+    const template = '| العنوان | التفاصيل |\n|---|---|\n| بند أول | اكتب التفاصيل هنا |';
+    const replacement = selected || template;
+    replaceSummarySelection(textarea, replacement, 0, replacement.length);
+    return;
+  }
+
+  if (format === 'auto') {
+    const original = selected || textarea.value;
+    if (!original.trim()) {
+      showToast('اكتب محتوى الموضوع أولاً لترتيبه.', 4000);
+      return;
+    }
+    const formatted = autoFormatSummary(original);
+    if (!selected) {
+      textarea.value = formatted;
+      textarea.setSelectionRange(formatted.length, formatted.length);
+      textarea.focus();
+      textarea.dispatchEvent(new Event('input', { bubbles: true }));
+    } else {
+      replaceSummarySelection(textarea, formatted, 0, formatted.length);
+    }
+    showToast('✨ تم ترتيب العناوين والفقرات والقوائم تلقائياً.');
     return;
   }
 
@@ -1090,6 +1234,7 @@ function initializeApp() {
   const summaryInput = document.getElementById('fSummary');
   const formatToolbar = document.querySelector('.format-toolbar');
   const insertSummaryImageButton = document.getElementById('insertSummaryImage');
+  const geminiFormatButton = document.getElementById('formatWithGemini');
   if (summaryInput) summaryInput.addEventListener('input', updateSummaryPreview);
   if (formatToolbar && summaryInput) {
     formatToolbar.addEventListener('click', event => {
@@ -1122,6 +1267,23 @@ function initializeApp() {
       altInput.value = '';
     });
   }
+  if (geminiFormatButton) {
+    geminiFormatButton.addEventListener('click', () => improveSummaryWithGemini(geminiFormatButton));
+  }
+  document.addEventListener('error', event => {
+    const image = event.target;
+    if (!(image instanceof HTMLImageElement) || !image.matches('.summary-image img')) return;
+    const figure = image.closest('.summary-image');
+    if (!figure || figure.querySelector('.summary-image-fallback')) return;
+
+    const fallback = document.createElement('a');
+    fallback.className = 'summary-image-fallback';
+    fallback.href = image.src;
+    fallback.target = '_blank';
+    fallback.rel = 'noopener noreferrer';
+    fallback.textContent = 'تعذر عرض الصورة هنا — افتح رابط الصورة';
+    image.replaceWith(fallback);
+  }, true);
   updateSummaryPreview();
 
   if (adminForm) {
