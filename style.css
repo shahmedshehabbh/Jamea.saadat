@@ -123,20 +123,26 @@ img { max-width: 100%; display: block; }
 .search button:hover { background: #b08840; }
 
 /* ── Hero Art ── */
-.hero-art { position: relative; min-height: 350px; }
+.hero-art {
+  position: relative;
+  min-height: 350px;
+  isolation: isolate;
+  filter: drop-shadow(0 20px 34px rgba(17,47,38,.16));
+}
 .hero-photo {
-  width: 78%; height: 350px; object-fit: cover;
+  width: 100%; height: 350px; object-fit: cover; object-position: center;
   border-radius: 18px 130px 18px 18px;
-  display: block; margin-right: auto; filter: saturate(.78);
+  display: block;
 }
 .stamp {
-  position: absolute; right: 0; bottom: 24px;
-  background: var(--green); color: white;
-  padding: 18px 20px; border-radius: 13px;
-  box-shadow: var(--shadow); width: 205px;
+  position: absolute; right: 0; bottom: 0; left: 0;
+  display: flex; flex-direction: column; align-items: flex-start;
+  padding: 58px 28px 22px; border-radius: 0 0 18px 18px;
+  color: white;
+  background: linear-gradient(0deg, rgba(8,39,31,.88), rgba(8,39,31,.42) 58%, transparent);
 }
-.stamp b { display: block; font: 700 30px 'Cairo', sans-serif; color: #e4bc70; }
-.stamp span { font-size: 12px; color: #d5e3db; }
+.stamp b { display: block; font: 800 38px/1.25 'Cairo', sans-serif; color: #f0ce86; text-shadow: 0 2px 12px rgba(0,0,0,.3); }
+.stamp span { font-size: 13px; font-weight: 700; color: #fff; text-shadow: 0 1px 8px rgba(0,0,0,.5); }
 .pattern { position: absolute; left: 0; top: -25px; color: var(--gold); opacity: .55; font-size: 95px; font-family: Amiri; }
 
 /* ── Quick Links ── */
@@ -538,7 +544,10 @@ img { max-width: 100%; display: block; }
   .hero-grid { display: block; }
   .hero h1 { font-size: 38px; }
   .hero-art { min-height: 240px; margin-top: 32px; }
-  .hero-photo { height: 250px; width: 82%; }
+  .hero-photo { height: 250px; }
+  .stamp { padding: 46px 20px 17px; }
+  .stamp b { font-size: 32px; }
+  .stamp span { font-size: 12px; }
   .quick { grid-template-columns: repeat(2, 1fr); }
   .quick a:last-child { grid-column: span 2; }
   .section { padding: 50px 0; }
