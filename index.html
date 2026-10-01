@@ -107,7 +107,6 @@
         <div class="stat-item"><b id="statTotal">٠</b><span>إجمالي المحاضرات</span></div>
         <div class="stat-item"><b id="statVideo">٠</b><span>محاضرات مرئية</span></div>
         <div class="stat-item"><b id="statAudio">٠</b><span>دروس صوتية</span></div>
-        <div class="stat-item"><b id="statSpeakers">٠</b><span>مشايخ وعلماء</span></div>
       </div>
     </div>
   </div>
@@ -400,7 +399,7 @@
               <button type="button" data-format="auto" aria-label="تنسيق تلقائي" title="تنسيق تلقائي">✨ تنسيق تلقائي</button>
               <button type="button" id="formatWithGemini" class="ai-format-button" aria-label="تحسين التنسيق باستخدام Gemini" title="إرسال الملخص إلى Gemini لترتيبه">✨ تحسين بـ Gemini</button>
             </div>
-            <textarea id="fSummary" rows="7" placeholder="اكتب ملخص المحاضرة هنا، واستخدم الأزرار لإضافة التنسيق والصور…"></textarea>
+            <textarea id="fSummary" rows="7" dir="rtl" placeholder="اكتب ملخص المحاضرة هنا، واستخدم الأزرار لإضافة التنسيق والصور…"></textarea>
             <div class="image-embed-controls">
               <input type="url" id="summaryImageUrl" placeholder="رابط الصورة المباشر (https://...)" aria-label="رابط الصورة المراد إدراجها">
               <input type="text" id="summaryImageAlt" placeholder="وصف الصورة (مطلوب)" aria-label="وصف الصورة">
@@ -409,7 +408,7 @@
             <span class="hint">يمكن لصق الجداول المنسوخة من Word مع الاحتفاظ ببنية الجدول والعناوين والخط العريض والمائل والقوائم والروابط؛ قد لا تنتقل الألوان والخطوط الخاصة أو الخلايا المدمجة. تُقبل روابط الصور المباشرة وروابط مشاركة Google Drive. عند اختيار Gemini يُرسل الملخص إلى Google. في الاستخدام المجاني قد تُستخدم البيانات لتحسين منتجات Google؛ راجع النتيجة قبل الحفظ.</span>
             <div class="summary-preview-wrap">
               <div class="summary-preview-title">معاينة الملخص</div>
-              <div id="summaryPreview" class="summary-preview" aria-live="polite">
+              <div id="summaryPreview" class="summary-preview" dir="rtl" aria-live="polite">
                 <span class="hint">ستظهر المعاينة هنا أثناء الكتابة.</span>
               </div>
             </div>

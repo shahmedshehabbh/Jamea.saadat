@@ -271,7 +271,6 @@ async function copyLectureLink(id) {
 // ── تحديث الإحصائيات ──
 function updateStats() {
   const L = getLectures();
-  const speakers = [...new Set(getLectures().filter(l => l.speaker === 'الشيخ أحمد الشهابي').map(l => l.speaker))].length;
   // أي مادة تحتوي على رابط يوتيوب/فيديو تُحسب تلقائياً في المرئيات
   const videos   = L.filter(l => l.type === 'مرئية' || Boolean(l.videoUrl)).length;
   // أي مادة تحتوي على رابط ساوندكلاود/صوت تُحسب تلقائياً في الصوتيات
@@ -281,7 +280,6 @@ function updateStats() {
   if ($('statTotal'))    $('statTotal').textContent    = toAr(L.length);
   if ($('statVideo'))    $('statVideo').textContent    = toAr(videos);
   if ($('statAudio'))    $('statAudio').textContent    = toAr(audios);
-  if ($('statSpeakers')) $('statSpeakers').textContent = toAr(speakers);
 }
 
 // ── آخر المحاضرات ──
@@ -587,7 +585,7 @@ function parseMarkdown(text) {
 
       if (!inTable) {
         inTable = true;
-        tableHtml = '<div class="table-wrapper"><table class="detail-table"><thead><tr>';
+        tableHtml = '<div class="table-wrapper" dir="rtl"><table class="detail-table" dir="rtl"><thead><tr>';
         cells.forEach(c => { tableHtml += `<th>${c}</th>`; });
         tableHtml += '</tr></thead><tbody>';
       } else {
@@ -746,7 +744,7 @@ async function getSummaryFormatErrorMessage(error) {
   }
 
   if (error.name === 'FunctionsFetchError' || error.name === 'FunctionsRelayError') {
-    return 'تعذر الوصول إلى دالة Supabase. تحقق من نشر format-summary على المشروع المحدد في config.js، ومن السماح بنطاق الموقع في allowedOrigins داخل الدالة.';
+    return 'تعذر الاتصال بدالة format-summary. تأكد من نشرها على مشروع Supabase المحدد في config.js (spxafptqlfojwzgeepjq)، ثم تحقق من السماح بنطاق الموقع في allowedOrigins ومن اتصال الإنترنت.';
   }
   return typeof error.message === 'string' ? error.message : String(error);
 }
