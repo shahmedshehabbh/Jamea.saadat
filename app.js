@@ -561,6 +561,11 @@ function getMarkdownImageUrl(value) {
 
 function parseMarkdown(text) {
   if (!text) return '';
+  text = text
+    .replace(/<br\s*\/?>/gi, '\u0000')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/\u0000/g, '<br>');
   
   // تحويل الجداول بنمط Markdown
   const lines = text.split('\n');
@@ -662,6 +667,90 @@ function updateSummaryPreview() {
     : '<span class="hint">ستظهر المعاينة هنا أثناء الكتابة.</span>';
 }
 
+function pastedInlineMarkdown(node) {
+  if (node.nodeType === Node.TEXT_NODE) return node.nodeValue || '';
+  if (!(node instanceof Element)) return '';
+  if (node.tagName === 'BR') return '\n';
+
+  const content = Array.from(node.childNodes).map(pastedInlineMarkdown).join('');
+  if (node.tagName === 'B' || node.tagName === 'STRONG') return `**${content}**`;
+  if (node.tagName === 'I' || node.tagName === 'EM') return `*${content}*`;
+  if (node.tagName === 'A') {
+    const url = getSafeMarkdownUrl(node.getAttribute('href') || '');
+    return url ? `[${content}](${url.replace(/\)/g, '%29')})` : content;
+  }
+  return content;
+}
+
+function pastedTableMarkdown(table) {
+  const rows = Array.from(table.rows).map(row =>
+    Array.from(row.cells).map(cell =>
+      pastedInlineMarkdown(cell).trim().replace(/\n+/g, '<br>').replace(/\|/g, '&#124;')
+    )
+  ).filter(row => row.length);
+  if (!rows.length) return '';
+
+  const header = rows[0];
+  const separator = header.map(() => '---');
+  return [header, separator, ...rows.slice(1)]
+    .map(row => `| ${row.join(' | ')} |`)
+    .join('\n');
+}
+
+function pastedHtmlToMarkdown(html) {
+  const documentCopy = new DOMParser().parseFromString(html, 'text/html');
+  const blockTags = new Set(['DIV', 'P', 'H1', 'H2', 'H3', 'H4', 'UL', 'OL', 'TABLE', 'BLOCKQUOTE']);
+
+  function renderBlock(node) {
+    if (node.nodeType === Node.TEXT_NODE) return node.nodeValue || '';
+    if (!(node instanceof Element)) return '';
+    if (node.tagName === 'TABLE') return `${pastedTableMarkdown(node)}\n\n`;
+    if (node.tagName === 'UL' || node.tagName === 'OL') {
+      const items = Array.from(node.children).filter(child => child.tagName === 'LI');
+      return `${items.map((item, index) => {
+        const marker = node.tagName === 'OL' ? `${index + 1}.` : '-';
+        return `${marker} ${pastedInlineMarkdown(item).trim()}`;
+      }).join('\n')}\n\n`;
+    }
+    if (node.tagName === 'BLOCKQUOTE') {
+      return `${pastedInlineMarkdown(node).trim().split('\n').map(line => `> ${line}`).join('\n')}\n\n`;
+    }
+    if (node.tagName === 'DIV' && Array.from(node.children).some(child => blockTags.has(child.tagName))) {
+      return Array.from(node.childNodes).map(renderBlock).join('');
+    }
+    if (/^H[1-4]$/.test(node.tagName)) return `## ${pastedInlineMarkdown(node).trim()}\n\n`;
+    if (node.tagName === 'P' || node.tagName === 'DIV') {
+      return `${pastedInlineMarkdown(node).trim()}\n\n`;
+    }
+    return pastedInlineMarkdown(node);
+  }
+
+  return Array.from(documentCopy.body.childNodes)
+    .map(renderBlock)
+    .join('')
+    .replace(/\r/g, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
+async function getSummaryFormatErrorMessage(error) {
+  if (!error || typeof error !== 'object') return String(error);
+
+  if (error.name === 'FunctionsHttpError' && error.context instanceof Response) {
+    try {
+      const responseBody = await error.context.clone().json();
+      if (responseBody && typeof responseBody.error === 'string') return responseBody.error;
+    } catch {
+      // The Edge Function may return a non-JSON error response.
+    }
+  }
+
+  if (error.name === 'FunctionsFetchError' || error.name === 'FunctionsRelayError') {
+    return 'تعذر الوصول إلى دالة Supabase. تحقق من نشر format-summary على المشروع المحدد في config.js، ومن السماح بنطاق الموقع في allowedOrigins داخل الدالة.';
+  }
+  return typeof error.message === 'string' ? error.message : String(error);
+}
+
 function replaceSummarySelection(textarea, value, selectionStart, selectionEnd) {
   const start = textarea.selectionStart;
   textarea.setRangeText(value, start, textarea.selectionEnd, 'end');
@@ -745,7 +834,7 @@ async function improveSummaryWithGemini(button) {
     showToast('تم ترتيب النص بواسطة Gemini. راجع المعلومات ثم احفظ التغييرات.');
   } catch (error) {
     console.error('Gemini summary formatting failed:', error);
-    showToast(`تعذر تحسين الملخص: ${error.message}`, 7000);
+    showToast(`تعذر تحسين الملخص: ${await getSummaryFormatErrorMessage(error)}`, 7000);
   } finally {
     button.disabled = false;
     button.textContent = originalLabel;
@@ -1235,7 +1324,26 @@ function initializeApp() {
   const formatToolbar = document.querySelector('.format-toolbar');
   const insertSummaryImageButton = document.getElementById('insertSummaryImage');
   const geminiFormatButton = document.getElementById('formatWithGemini');
-  if (summaryInput) summaryInput.addEventListener('input', updateSummaryPreview);
+  if (summaryInput) {
+    summaryInput.addEventListener('input', updateSummaryPreview);
+    summaryInput.addEventListener('paste', event => {
+      const html = event.clipboardData && event.clipboardData.getData('text/html');
+      if (!html) return;
+      const markdown = pastedHtmlToMarkdown(html);
+      if (!markdown) return;
+
+      event.preventDefault();
+      const start = summaryInput.selectionStart;
+      const end = summaryInput.selectionEnd;
+      const before = summaryInput.value.slice(0, start);
+      const after = summaryInput.value.slice(end);
+      const needsBlockSpacing = markdown.includes('\n');
+      const prefix = needsBlockSpacing && before && !before.endsWith('\n') ? '\n\n' : '';
+      const suffix = needsBlockSpacing && after && !after.startsWith('\n') ? '\n\n' : '';
+      summaryInput.setRangeText(`${prefix}${markdown}${suffix}`, start, end, 'end');
+      summaryInput.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+  }
   if (formatToolbar && summaryInput) {
     formatToolbar.addEventListener('click', event => {
       const button = event.target.closest('[data-format]');
