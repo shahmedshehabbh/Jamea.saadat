@@ -523,6 +523,62 @@ function getSoundCloudEmbed(url) {
   return `<audio controls src="${url}" style="width:100%"></audio>`;
 }
 
+function printLectureSummary(id) {
+  const lecture = getLectures().find(item => item.id === Number(id));
+  if (!lecture) {
+    showToast('تعذر العثور على ملخص المحاضرة.', 5000);
+    return;
+  }
+
+  const summary = lecture.summary || lecture.desc || '';
+  if (!summary.trim()) {
+    showToast('لا يوجد ملخص متاح لهذه المحاضرة.', 5000);
+    return;
+  }
+
+  const printWindow = window.open('', '_blank');
+  if (!printWindow) {
+    showToast('تعذر فتح نافذة الملخص. اسمح بالنوافذ المنبثقة ثم حاول مرة أخرى.', 6000);
+    return;
+  }
+
+  printWindow.opener = null;
+  printWindow.document.open();
+  printWindow.document.write(`<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>${escapeHtmlAttribute(lecture.title)} - ملخص المحاضرة</title>
+  <style>
+    body { max-width: 820px; margin: 40px auto; padding: 0 28px; color: #17312b; font: 16px/1.9 Arial, sans-serif; direction: rtl; }
+    h1 { margin: 0 0 8px; color: #0c4a3c; font-size: 26px; }
+    .meta { margin: 0 0 28px; color: #67756f; font-size: 13px; }
+    h2, h3 { color: #0c4a3c; }
+    blockquote { margin: 18px 0; padding: 10px 16px; border-right: 3px solid #c69b52; background: #f2f6f2; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 8px 10px; border: 1px solid #dfe5dd; text-align: right; }
+    th { background: #e9f0e9; }
+    img { max-width: 100%; }
+    a { color: #176650; overflow-wrap: anywhere; }
+    @page { size: A4; margin: 18mm; }
+    @media print { body { max-width: none; margin: 0; padding: 0; } }
+  </style>
+</head>
+<body>
+  <h1>${escapeHtmlAttribute(lecture.title)}</h1>
+  <p class="meta">${escapeHtmlAttribute([lecture.speaker, lecture.date].filter(Boolean).join(' · '))}</p>
+  <main>${parseMarkdown(summary)}</main>
+</body>
+</html>`);
+  printWindow.document.close();
+
+  window.setTimeout(() => {
+    printWindow.focus();
+    printWindow.print();
+  }, 300);
+}
+
 // ── دالة تحليل وتنسيق الملخص (Markdown & Tables Parser) ──
 function escapeHtmlAttribute(value) {
   return String(value).replace(/[&<>"']/g, char => ({
@@ -1028,6 +1084,7 @@ function showDetail(id, viewMode = '') {
       </a>`;
   }
 
+  actions.innerHTML += `<button type="button" class="btn-action-link btn-action-pdf" data-download-summary="${x.id}" title="طباعة الملخص أو حفظه بصيغة PDF">⬇️ <span>تنزيل الملخص PDF</span></button>`;
   actions.innerHTML += `<button type="button" class="btn-outline admin-only" style="border-color:var(--gold);color:var(--gold);cursor:pointer;" onclick="copyLectureLink(${x.id})">📋 نسخ الرابط</button>`;
   actions.innerHTML += `<button type="button" class="btn-outline admin-only" style="border-color:var(--gold);color:var(--gold);cursor:pointer;" onclick="editLecture(${x.id})">✏️ تعديل المادة</button>`;
   actions.innerHTML += `<button type="button" class="btn-outline admin-only" style="border-color:#e53e3e;color:#e53e3e;cursor:pointer;" onclick="deleteLecture(${x.id})">🗑️ حذف</button>`;
@@ -1493,6 +1550,12 @@ function initializeApp() {
       if (window.location.hash === hash) showDetail(id, viewMode);
       else window.location.hash = hash;
       return; 
+    }
+    const summaryPdfButton = e.target.closest('[data-download-summary]');
+    if (summaryPdfButton) {
+      e.preventDefault();
+      printLectureSummary(summaryPdfButton.dataset.downloadSummary);
+      return;
     }
     const pageLink = e.target.closest('[data-page]');
     if (pageLink) { e.preventDefault(); navigateToHash(pageLink.dataset.page); return; }
