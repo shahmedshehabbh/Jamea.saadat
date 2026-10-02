@@ -926,8 +926,12 @@ function showDetail(id, viewMode = '') {
   $('#detailCategory').textContent = x.category;
   $('#detailMeta').textContent     = `${x.speaker} · ${x.date} · ${effectiveType} · ${x.duration}`;
   
-  // عرض الملخص بتنسيق غني وجداول
-  const summaryContent = x.summary || x.desc || '';
+  const mediaSectionView = viewMode === 'مرئية' || viewMode === 'صوتية';
+  const summaryHeading = document.querySelector('#detailSummary')?.previousElementSibling;
+  if (summaryHeading) summaryHeading.textContent = mediaSectionView ? 'الوصف المختصر' : 'ملخص المحاضرة';
+
+  // تعرض أقسام المرئيات والصوتيات الوصف المختصر فقط، بينما يحتفظ عرض الدرس بملخصه الكامل.
+  const summaryContent = mediaSectionView ? (x.desc || '') : (x.summary || x.desc || '');
   const summaryEl = document.getElementById('detailSummary');
   if (summaryEl) {
     summaryEl.innerHTML = parseMarkdown(summaryContent);
