@@ -147,7 +147,7 @@ img { max-width: 100%; display: block; }
 
 /* ── Quick Links ── */
 .quick {
-  display: grid; grid-template-columns: repeat(5, 1fr);
+  display: grid; grid-template-columns: repeat(3, 1fr);
   gap: 12px; margin-top: -31px; position: relative; z-index: 2;
 }
 .quick a {
