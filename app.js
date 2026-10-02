@@ -799,14 +799,14 @@ function autoFormatSummary(text) {
   return output.join('\n').replace(/\n{3,}/g, '\n\n').trim();
 }
 
-async function improveSummaryWithGemini(button) {
+async function improveSummaryWithAI(button) {
   const textarea = document.getElementById('fSummary');
   if (!textarea || !supabaseClient) {
-    showToast('يلزم إعداد Supabase قبل استخدام Gemini.', 5000);
+    showToast('يلزم إعداد Supabase قبل استخدام التحسين بالذكاء الاصطناعي.', 5000);
     return;
   }
   if (!isAdminAuthenticated()) {
-    showToast('سجّل الدخول بحساب المشرف لاستخدام Gemini.', 5000);
+    showToast('سجّل الدخول بحساب المشرف لاستخدام التحسين بالذكاء الاصطناعي.', 5000);
     return;
   }
   if (!textarea.value.trim()) {
@@ -824,13 +824,13 @@ async function improveSummaryWithGemini(button) {
     });
     if (error) throw error;
     if (!data || typeof data.text !== 'string' || !data.text.trim()) {
-      throw new Error('لم تُرجع خدمة Gemini نصاً صالحاً.');
+      throw new Error('لم تُرجع خدمة التنسيق نصاً صالحاً.');
     }
     textarea.value = data.text.trim();
     textarea.dispatchEvent(new Event('input', { bubbles: true }));
-    showToast('تم ترتيب النص بواسطة Gemini. راجع المعلومات ثم احفظ التغييرات.');
+    showToast('تم ترتيب النص بالذكاء الاصطناعي. راجع المعلومات ثم احفظ التغييرات.');
   } catch (error) {
-    console.error('Gemini summary formatting failed:', error);
+    console.error('AI summary formatting failed:', error);
     showToast(`تعذر تحسين الملخص: ${await getSummaryFormatErrorMessage(error)}`, 7000);
   } finally {
     button.disabled = false;
@@ -1326,7 +1326,7 @@ function initializeApp() {
   const summaryInput = document.getElementById('fSummary');
   const formatToolbar = document.querySelector('.format-toolbar');
   const insertSummaryImageButton = document.getElementById('insertSummaryImage');
-  const geminiFormatButton = document.getElementById('formatWithGemini');
+  const aiFormatButton = document.getElementById('formatWithAI');
   if (summaryInput) {
     summaryInput.addEventListener('input', updateSummaryPreview);
     summaryInput.addEventListener('paste', event => {
@@ -1378,8 +1378,8 @@ function initializeApp() {
       altInput.value = '';
     });
   }
-  if (geminiFormatButton) {
-    geminiFormatButton.addEventListener('click', () => improveSummaryWithGemini(geminiFormatButton));
+  if (aiFormatButton) {
+    aiFormatButton.addEventListener('click', () => improveSummaryWithAI(aiFormatButton));
   }
   document.addEventListener('error', event => {
     const image = event.target;
