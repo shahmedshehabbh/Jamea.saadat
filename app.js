@@ -429,7 +429,6 @@ function renderArchive() {
   const L    = getLectures();
   const q    = (document.querySelector('#archiveSearch input')?.value || '').toLowerCase();
   const type = document.getElementById('typeFilter')?.value || '';
-  const cat  = document.getElementById('categoryFilter')?.value || '';
   const sort = document.getElementById('sortFilter')?.value || 'newest';
 
   let found = L.filter(x => {
@@ -455,7 +454,7 @@ function renderArchive() {
       matchesType = x.type === type;
     }
 
-    return (!q || text.includes(normalizeSearchText(q))) && matchesType && (!cat || x.category.includes(cat));
+    return (!q || text.includes(normalizeSearchText(q))) && matchesType;
   });
 
   if (sort === 'oldest') found = [...found].reverse();
@@ -1442,6 +1441,33 @@ function initializeApp() {
 
   // Event Delegation
   document.addEventListener('click', e => {
+    const shareToggle = e.target.closest('[data-share-toggle]');
+    const shareWidget = e.target.closest('.share-widget');
+    const shareMenu = document.getElementById('shareMenu');
+    if (shareToggle) {
+      const opening = shareToggle.getAttribute('aria-expanded') !== 'true';
+      if (opening) {
+        const pageUrl = window.location.href;
+        const pageTitle = document.querySelector('.section-page.active h1, .section-page.active h2')?.innerText.trim().replace(/\s+/g, ' ')
+          || document.querySelector('.home:not(.hidden) h1')?.innerText.trim().replace(/\s+/g, ' ')
+          || document.title;
+        const whatsappLink = document.querySelector('[data-share-link="whatsapp"]');
+        const twitterLink = document.querySelector('[data-share-link="twitter"]');
+        if (whatsappLink) whatsappLink.href = `https://wa.me/?text=${encodeURIComponent(`${pageTitle} ${pageUrl}`)}`;
+        if (twitterLink) twitterLink.href = `https://twitter.com/intent/tweet?text=${encodeURIComponent(pageTitle)}&url=${encodeURIComponent(pageUrl)}`;
+      }
+      shareToggle.setAttribute('aria-expanded', String(opening));
+      if (shareMenu) shareMenu.hidden = !opening;
+      return;
+    }
+    if (shareMenu && !shareWidget) {
+      shareMenu.hidden = true;
+      document.getElementById('shareToggle')?.setAttribute('aria-expanded', 'false');
+    } else if (e.target.closest('[data-share-link]')) {
+      if (shareMenu) shareMenu.hidden = true;
+      document.getElementById('shareToggle')?.setAttribute('aria-expanded', 'false');
+    }
+
     const detailBtn = e.target.closest('[data-detail]');
     if (detailBtn) { 
       e.preventDefault(); 
@@ -1471,12 +1497,20 @@ function initializeApp() {
     const adminLogin = e.target.closest('[data-admin-login]');
     if (adminLogin) { e.preventDefault(); toggleAdminSession(); return; }
   });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+      const shareMenu = document.getElementById('shareMenu');
+      if (shareMenu) shareMenu.hidden = true;
+      const shareToggle = document.querySelector('[data-share-toggle]');
+      shareToggle?.setAttribute('aria-expanded', 'false');
+      shareToggle?.focus();
+    }
+  });
 
   // ربط عناصر البحث والفلاتر
   const heroSearch = document.getElementById('heroSearch');
   const archiveSearch = document.getElementById('archiveSearch');
   const typeFilter = document.getElementById('typeFilter');
-  const categoryFilter = document.getElementById('categoryFilter');
   const sortFilter = document.getElementById('sortFilter');
   const menuBtn = document.getElementById('menuBtn');
   const closeMenu = document.getElementById('closeMenu');
@@ -1501,7 +1535,6 @@ function initializeApp() {
       ? `archive?type=${encodeURIComponent(typeFilter.value)}`
       : 'archive');
   });
-  if (categoryFilter) categoryFilter.addEventListener('change', () => { currentPage = 1; renderArchive(); });
   if (sortFilter) sortFilter.addEventListener('change', () => { currentPage = 1; renderArchive(); });
 
   if (menuBtn) {
