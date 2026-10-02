@@ -1057,6 +1057,8 @@ function handleHashChange() {
     view = 'speakers-page';
   } else if (hash === 'about-page') {
     view = 'about-page';
+  } else if (hash === 'questions-page') {
+    view = 'questions-page';
   } else if (hash === '' || hash === 'home') {
     view = 'home';
   }
