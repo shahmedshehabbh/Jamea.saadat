@@ -927,13 +927,21 @@ function showDetail(id, viewMode = '') {
   $('#detailMeta').textContent     = `${x.speaker} · ${x.date} · ${effectiveType} · ${x.duration}`;
   
   const mediaSectionView = viewMode === 'مرئية' || viewMode === 'صوتية';
-  const summaryHeading = document.querySelector('#detailSummary')?.previousElementSibling;
-  if (summaryHeading) summaryHeading.textContent = mediaSectionView ? 'الوصف المختصر' : 'ملخص المحاضرة';
+  const descriptionHeading = document.getElementById('detailDescriptionHeading');
+  const descriptionEl = document.getElementById('detailDescription');
+  if (descriptionHeading) descriptionHeading.hidden = !x.desc;
+  if (descriptionEl) {
+    descriptionEl.hidden = !x.desc;
+    descriptionEl.innerHTML = x.desc ? parseMarkdown(x.desc) : '';
+  }
 
-  // تعرض أقسام المرئيات والصوتيات الوصف المختصر فقط، بينما يحتفظ عرض الدرس بملخصه الكامل.
-  const summaryContent = mediaSectionView ? (x.desc || '') : (x.summary || x.desc || '');
+  // تعرض أقسام المرئيات والصوتيات الوصف والنقاط فقط؛ ويظهر الوصف قبل الملخص في عرض الدرس الكامل.
+  const summaryHeading = document.getElementById('detailSummaryHeading');
   const summaryEl = document.getElementById('detailSummary');
+  const summaryContent = mediaSectionView ? '' : (x.summary || '');
+  if (summaryHeading) summaryHeading.hidden = !summaryContent;
   if (summaryEl) {
+    summaryEl.hidden = !summaryContent;
     summaryEl.innerHTML = parseMarkdown(summaryContent);
   }
 
