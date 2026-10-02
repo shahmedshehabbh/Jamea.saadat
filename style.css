@@ -170,7 +170,7 @@ img { max-width: 100%; display: block; }
 .view-all:hover { text-decoration: underline; }
 
 /* ── Cards ── */
-.cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; }
+.cards { display: grid; grid-template-columns: repeat(3, 1fr); grid-auto-rows: 1fr; gap: 24px; }
 .card {
   border: 1px solid var(--line); border-radius: 16px;
   overflow: hidden; background: #fff; box-shadow: var(--shadow);

@@ -232,6 +232,10 @@ function makeCard(x) {
     if (ytThumb) img = ytThumb;
   }
   img = img || 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?auto=format&fit=crop&w=800&q=80';
+  const description = Array.from(String(x.desc || '').trim());
+  const cardDescription = description.length > 350
+    ? `${description.slice(0, 349).join('').trimEnd()}…`
+    : description.join('');
   
   return `
   <article class="card">
@@ -243,7 +247,7 @@ function makeCard(x) {
     <div class="card-body">
       <h3>${x.title}</h3>
       <div class="meta">${x.speaker} · ${x.date}</div>
-      <p class="desc">${x.desc}</p>
+      <p class="desc">${cardDescription}</p>
       <div class="card-foot">
         <a class="watch" href="#lecture/${x.id}" data-detail="${x.id}" data-viewmode="${currentFilter}">عرض المحاضرة ←</a>
       </div>
