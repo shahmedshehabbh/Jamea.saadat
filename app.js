@@ -6,10 +6,67 @@
 console.log('🔵 app.js loaded successfully!');
 const LECTURES_STORAGE_KEY = 'saadat_lectures_v2';
 const SUPABASE_TABLE = 'lectures';
+const READING_THEME_KEY = 'saadat_reading_theme';
+const READING_FONT_SIZE_KEY = 'saadat_reading_font_size';
 let lectures = [];
 let supabaseClient = null;
 let supabaseSession = null;
 let usesLocalFallback = true;
+
+function updateReadingControls() {
+  const isDark = document.documentElement.dataset.theme === 'dark';
+  const isLarge = document.getElementById('detail')?.classList.contains('large-reading-text') || false;
+  const themeToggle = document.getElementById('themeToggle');
+  const fontSizeToggle = document.getElementById('fontSizeToggle');
+
+  if (themeToggle) {
+    themeToggle.textContent = isDark ? '☀️ الوضع الفاتح' : '🌙 الوضع الداكن';
+    themeToggle.setAttribute('aria-pressed', String(isDark));
+  }
+  if (fontSizeToggle) {
+    fontSizeToggle.textContent = isLarge ? 'A− تصغير الخط' : 'A+ تكبير الخط';
+    fontSizeToggle.setAttribute('aria-pressed', String(isLarge));
+  }
+}
+
+function persistReadingPreference(key, value) {
+  try {
+    localStorage.setItem(key, value);
+  } catch (error) {
+    console.error('Failed to save reading preference:', error);
+    showToast('تعذر حفظ تفضيل القراءة على هذا الجهاز.', 5000);
+  }
+}
+
+function applyReadingPreferences() {
+  let theme = 'light';
+  let fontSize = 'normal';
+  try {
+    theme = localStorage.getItem(READING_THEME_KEY) === 'dark' ? 'dark' : 'light';
+    fontSize = localStorage.getItem(READING_FONT_SIZE_KEY) === 'large' ? 'large' : 'normal';
+  } catch (error) {
+    console.error('Failed to load reading preferences:', error);
+    showToast('تعذر تحميل تفضيلات القراءة المحفوظة.', 5000);
+  }
+
+  document.documentElement.dataset.theme = theme;
+  document.getElementById('detail')?.classList.toggle('large-reading-text', fontSize === 'large');
+  updateReadingControls();
+}
+
+function toggleReadingTheme() {
+  const theme = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+  document.documentElement.dataset.theme = theme;
+  persistReadingPreference(READING_THEME_KEY, theme);
+  updateReadingControls();
+}
+
+function toggleReadingFontSize() {
+  const detailPage = document.getElementById('detail');
+  const isLarge = detailPage.classList.toggle('large-reading-text');
+  persistReadingPreference(READING_FONT_SIZE_KEY, isLarge ? 'large' : 'normal');
+  updateReadingControls();
+}
 
 // ── بيانات المحاضرات الافتراضية ──
 const DEFAULT_LECTURES = [
@@ -240,7 +297,7 @@ function makeCard(x) {
   return `
   <article class="card">
     <div class="thumb">
-      <img src="${img}" alt="${x.title}" loading="lazy" onerror="this.src='https://images.unsplash.com/photo-1481627834876-b7833e8f5570?auto=format&fit=crop&w=800&q=80'">
+      <img src="${img}" alt="${x.title}" loading="lazy" decoding="async" onerror="this.src='https://images.unsplash.com/photo-1481627834876-b7833e8f5570?auto=format&fit=crop&w=800&q=80'">
       <span class="tag">${x.category || 'عام'}</span>
       <span class="type-badge ${cls}">${displayType}</span>
     </div>
@@ -353,7 +410,7 @@ function renderSpeakers(id) {
     const count = lectureCounts.get(name) || 0;
     const photo = speakerInfo.photo || '';
     const avatarHtml = photo
-      ? `<img src="${photo}" alt="${name}" onerror="this.parentElement.innerHTML='🕌'">`
+      ? `<img src="${photo}" alt="${name}" loading="lazy" decoding="async" onerror="this.parentElement.innerHTML='🕌'">`
       : '🕌';
       
     return `
@@ -1094,7 +1151,7 @@ function showDetail(id, viewMode = '') {
   const related = L.filter(l => l.id !== x.id && (l.category === x.category || l.speaker === x.speaker)).slice(0, 4);
   const rl = document.getElementById('relatedList');
   rl.innerHTML = related.length
-    ? related.map(r => `<div class="related-item" data-detail="${r.id}"><img class="related-thumb" src="${r.image}" alt="" onerror="this.style.display='none'"><div><h5>${r.title}</h5><span>${r.speaker} · ${r.duration}</span></div></div>`).join('')
+    ? related.map(r => `<div class="related-item" data-detail="${r.id}"><img class="related-thumb" src="${r.image}" alt="" loading="lazy" decoding="async" onerror="this.style.display='none'"><div><h5>${r.title}</h5><span>${r.speaker} · ${r.duration}</span></div></div>`).join('')
     : '<p style="color:var(--muted);font-size:13px">لا توجد محاضرات ذات صلة.</p>';
   show('detail');
 }
@@ -1428,6 +1485,7 @@ function closeAdmin() {
 // ── كل الأحداث داخل DOMContentLoaded ──
 function initializeApp() {
   console.log('✅ Initializing app...');
+  applyReadingPreferences();
   
   // ربط أزرار الإدارة
   const adminToggle = document.getElementById('adminToggle');
@@ -1597,6 +1655,15 @@ function initializeApp() {
 
   // Event Delegation
   document.addEventListener('click', e => {
+    if (e.target.closest('#themeToggle')) {
+      toggleReadingTheme();
+      return;
+    }
+    if (e.target.closest('#fontSizeToggle')) {
+      toggleReadingFontSize();
+      return;
+    }
+
     const shareToggle = e.target.closest('[data-share-toggle]');
     const shareWidget = e.target.closest('.share-widget');
     const shareMenu = document.getElementById('shareMenu');

@@ -12,11 +12,6 @@
 </head>
 <body>
 
-<!-- ── Top Bar ── -->
-<div class="topbar">
-  <div class="shell" style="justify-content:flex-end;"></div>
-</div>
-
 <!-- ── Navigation ── -->
 <nav class="nav">
   <div class="shell navin">
@@ -67,7 +62,8 @@
       <div class="hero-art">
         <img class="hero-photo"
           src="assets/1.jpeg"
-          alt="صورة غلاف مكتبة جامع السعادات">
+          alt="صورة غلاف مكتبة جامع السعادات"
+          width="928" height="1149" fetchpriority="high" decoding="async">
         <div class="stamp">
           <b id="totalCount">٠</b>
           <span>محاضرة متاحة</span>
@@ -116,7 +112,7 @@
   <section class="section tint reveal">
     <div class="shell">
       <div class="feature">
-        <img src="https://images.unsplash.com/photo-1481627834876-b7833e8f5570?auto=format&fit=crop&w=800&q=80" alt="مكتبة">
+        <img src="https://images.unsplash.com/photo-1481627834876-b7833e8f5570?auto=format&fit=crop&w=800&q=80" alt="مكتبة" width="800" height="740" loading="lazy" decoding="async">
         <div class="feature-copy">
           <p class="eyebrow" style="color:#e4bc70">✦ عن الكتاب</p>
           <h2>جامع السعادات للنراقي</h2>
@@ -196,6 +192,10 @@
             <div style="display:grid;place-items:center;height:100%;color:#aaa;font-size:14px">لم يُرفع وسيط بعد</div>
           </div>
           <div class="detail-body">
+            <div class="reading-toolbar" role="group" aria-label="خيارات القراءة">
+              <button type="button" id="themeToggle" class="reading-toggle" aria-pressed="false">🌙 الوضع الداكن</button>
+              <button type="button" id="fontSizeToggle" class="reading-toggle" aria-pressed="false">🔎 تكبير الخط</button>
+            </div>
             <h3 id="detailDescriptionHeading">الوصف المختصر</h3>
             <div id="detailDescription"></div>
             <h3 id="detailSummaryHeading">ملخص المحاضرة</h3>
@@ -266,7 +266,7 @@
     <div class="shell" style="max-width:820px">
       <p class="eyebrow">✦ التعريف بالكتاب</p>
       <h2 style="font:700 34px 'Cairo',sans-serif;margin:10px 0 24px">كتاب جامع السعادات</h2>
-      <div style="line-height:2;color:#4a5c56;font-size:16px">
+      <div style="line-height:2;color:var(--reading-muted);font-size:16px">
         <p><strong>المؤلف:</strong> العلامة المحقق المولى مهدي النراقي (١١٢٨ - ١٢٠٩ هـ)</p>
         <p>كتاب <em>جامع السعادات</em> من أجمع كتب الأخلاق الإسلامية، يقع في ثلاثة أجزاء يتناول فيها المؤلف علم الأخلاق بمنهج فلسفي تحليلي دقيق، مستنيراً بالقرآن الكريم والسنة الشريفة.</p>
         <p><strong>محاور الكتاب الرئيسية:</strong></p>
@@ -279,7 +279,7 @@
         </ul>
 
         <!-- صندوق تحميل الكتاب -->
-        <div style="background:#fff;border:1px solid var(--line);border-radius:14px;padding:24px;box-shadow:var(--shadow);text-align:center;margin-top:20px;">
+        <div style="background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:24px;box-shadow:var(--shadow);text-align:center;margin-top:20px;">
           <div style="font-size:36px;margin-bottom:8px;">📚</div>
           <h3 style="color:var(--green);font-size:19px;margin-bottom:6px;">تحميل وقراءة كتاب جامع السعادات</h3>
           <p style="color:var(--muted);font-size:14px;margin-bottom:18px;">يمكنكم تصفح وتحميل أجزاء كتاب جامع السعادات مجاناً عبر مكتبة المحسن الرقمية:</p>
@@ -477,8 +477,8 @@
   </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="config.js"></script>
-<script src="app.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+<script src="config.js" defer></script>
+<script src="app.js" defer></script>
 </body>
 </html>
