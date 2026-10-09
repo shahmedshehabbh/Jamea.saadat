@@ -357,7 +357,6 @@ const SPEAKERS_DATA = {
     name: 'سماحة الشَّيْخُ أَحْمَدُ الشَّهَابِيُ (حفظه الله)',
     photo: 'https://drive.google.com/thumbnail?id=1FIJreLO0ClW6ksKZcelBmd6UjTVANaCb&sz=w800',
     title: 'أستاذ الحوزة العلمية ومفسر القرآن الكريم',
-    origin: 'البحرين - الدراز',
     sections: [
       {
         title: '📜 النَّسَبُ الشَّرِيفُ وَالوِلَادَةُ',
@@ -451,11 +450,10 @@ function openSpeakerBio(speakerName) {
 
   body.innerHTML = `
     <div class="bio-header">
-      <img src="${bio.photo}" alt="${bio.name}" class="bio-avatar" onerror="this.outerHTML='<span style=\"width:120px;height:120px;border-radius:50%;border:4px solid var(--gold);display:flex;align-items:center;justify-content:center;font-size:48px;\">🕌</span>'">
+      <img src="${bio.photo}" alt="${bio.name}" class="bio-avatar" onerror="this.style.display='none'">
       <div>
         <h2 style="color:var(--green);font-size:22px;margin:0 0 6px;">${bio.name}</h2>
         <p style="color:var(--gold);font-weight:700;font-size:14px;margin:0 0 4px;">${bio.title}</p>
-        <span style="font-size:13px;color:var(--muted);">📍 ${bio.origin}</span>
       </div>
     </div>
     <div class="bio-body">
