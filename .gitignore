@@ -16,6 +16,9 @@ quick-test.html
 
 # Locally generated lecture drafts (never publish these automatically)
 tools/lecture-drafts/drafts/
+__pycache__/
+*.pyc
+*.pyo
 
 # Local Supabase credentials (use config.example.js as a template)
 config.js
