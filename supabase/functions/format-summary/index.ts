@@ -68,9 +68,9 @@ Deno.serve(async request => {
     return jsonResponse({ error: 'An authenticated administrator is required.' }, 403, responseOrigin);
   }
 
-  const apiKey = Deno.env.get('GEMINI_API_KEY');
+  const apiKey = Deno.env.get('GROQ_API_KEY');
   if (!apiKey) {
-    return jsonResponse({ error: 'Gemini is not configured on the server.' }, 503, responseOrigin);
+    return jsonResponse({ error: 'Groq is not configured on the server.' }, 503, responseOrigin);
   }
 
   let input: unknown;
@@ -98,65 +98,103 @@ Deno.serve(async request => {
 - حافظ على فواصل الفقرات والاقتباسات والروابط والصور الموجودة، ولا تنشئ روابط أو صوراً جديدة.
 - لا تخرج HTML أو تعليمات برمجية.`;
 
-  let geminiResponse: Response;
+  let groqResponse: Response;
   try {
-    geminiResponse = await fetch(
-      'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent',
+    groqResponse = await fetch(
+      'https://api.groq.com/openai/v1/chat/completions',
       {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-goog-api-key': apiKey
+          'Authorization': `Bearer ${apiKey}`
         },
         body: JSON.stringify({
-          systemInstruction: { parts: [{ text: systemInstruction }] },
-          contents: [{ role: 'user', parts: [{ text }] }],
-          generationConfig: {
-            temperature: 0.2,
-            maxOutputTokens: 8192
-          }
+          model: 'openai/gpt-oss-20b',
+          messages: [
+            { role: 'system', content: systemInstruction },
+            { role: 'user', content: text }
+          ],
+          temperature: 0.2,
+          reasoning_effort: 'low',
+          max_completion_tokens: 8192
         }),
         signal: AbortSignal.timeout(30000)
       }
     );
   } catch (error) {
-    console.error('Gemini request failed:', error);
-    return jsonResponse({ error: 'Could not connect to Gemini. Try again later.' }, 502, responseOrigin);
+    console.error('Groq request failed:', error);
+    return jsonResponse({ error: 'تعذر الاتصال بخدمة Groq. حاول مرة أخرى لاحقاً.' }, 502, responseOrigin);
   }
 
-  if (!geminiResponse.ok) {
-    console.error('Gemini returned HTTP status:', geminiResponse.status);
-    return jsonResponse({ error: 'Gemini could not format this summary. Check the key and free-tier quota.' }, 502, responseOrigin);
+  if (!groqResponse.ok) {
+    let providerErrorMessage = '';
+    try {
+      const errorBody: unknown = await groqResponse.json();
+      const providerError = isRecord(errorBody) && isRecord(errorBody.error) ? errorBody.error : null;
+      providerErrorMessage = providerError && typeof providerError.message === 'string'
+        ? providerError.message.replace(/gsk_[A-Za-z0-9_-]{20,}/g, '[redacted]').slice(0, 400)
+        : '';
+    } catch {
+      // Preserve the HTTP status when Groq does not return a JSON error body.
+    }
+
+    console.error('Groq returned HTTP status:', groqResponse.status, providerErrorMessage);
+    let errorMessage = 'تعذر على Groq تنسيق الملخص.';
+    if (groqResponse.status === 400) {
+      errorMessage = 'رفض Groq الطلب. تحقق من صيغة النص أو من توفر النموذج.';
+    } else if (groqResponse.status === 401 || groqResponse.status === 403) {
+      errorMessage = 'رفض Groq مفتاح API أو صلاحياته. تحقق من GROQ_API_KEY في أسرار Supabase.';
+    } else if (groqResponse.status === 404) {
+      errorMessage = 'نموذج Groq المحدد غير متاح. تحقق من توفر النموذج في حسابك.';
+    } else if (groqResponse.status === 429) {
+      errorMessage = 'تم تجاوز حصة Groq أو حد الطلبات. انتظر قليلاً ثم حاول مرة أخرى.';
+    } else if (groqResponse.status >= 500) {
+      errorMessage = 'خدمة Groq غير متاحة مؤقتاً. حاول مرة أخرى لاحقاً.';
+    }
+    if (providerErrorMessage) errorMessage += ` تفاصيل Groq: ${providerErrorMessage}`;
+    return jsonResponse({ error: errorMessage, groqStatus: groqResponse.status }, 502, responseOrigin);
   }
 
   let result: unknown;
   try {
-    result = await geminiResponse.json();
+    result = await groqResponse.json();
   } catch (error) {
-    console.error('Gemini returned invalid JSON:', error);
-    return jsonResponse({ error: 'Gemini returned an unreadable response.' }, 502, responseOrigin);
+    console.error('Groq returned invalid JSON:', error);
+    return jsonResponse({ error: 'أعادت Groq استجابة غير قابلة للقراءة.' }, 502, responseOrigin);
   }
 
-  const candidates = isRecord(result) && Array.isArray(result.candidates) ? result.candidates : [];
-  const firstCandidate = candidates.length && isRecord(candidates[0]) ? candidates[0] : null;
-  const content = firstCandidate && isRecord(firstCandidate.content) ? firstCandidate.content : null;
-  const parts = content && Array.isArray(content.parts) ? content.parts : [];
-  const formattedText = parts
-    .filter(isRecord)
-    .map(part => typeof part.text === 'string' ? part.text : '')
-    .join('')
+  const choices = isRecord(result) && Array.isArray(result.choices) ? result.choices : [];
+  const firstChoice = choices[0];
+  const message = isRecord(firstChoice) && isRecord(firstChoice.message) ? firstChoice.message : null;
+  const content = message?.content;
+  const responseText = typeof content === 'string'
+    ? content
+    : Array.isArray(content)
+      ? content
+        .filter(isRecord)
+        .map(part => typeof part.text === 'string' ? part.text : '')
+        .join('')
+      : '';
+  const formattedText = responseText
     .trim()
     .replace(/^```(?:markdown|md)?\s*\n/i, '')
     .replace(/\n```\s*$/, '')
     .trim();
   if (!formattedText) {
-    return jsonResponse({ error: 'Gemini returned no formatted text.' }, 502, responseOrigin);
-  }
-  if (/<\/?[a-z][^>]*>/i.test(formattedText)) {
-    return jsonResponse({ error: 'Gemini returned unsupported HTML. Try formatting again.' }, 502, responseOrigin);
+    const finishReason = isRecord(firstChoice) && typeof firstChoice.finish_reason === 'string'
+      ? firstChoice.finish_reason
+      : 'unknown';
+    console.error('Groq returned no final text:', {
+      finishReason,
+      messageFields: message ? Object.keys(message) : []
+    });
+    const errorMessage = finishReason === 'length'
+      ? 'انتهت مساحة الاستجابة قبل أن تُرجع Groq النص المنسق. اختصر الملخص وحاول مرة أخرى.'
+      : 'لم تُرجع Groq نصاً نهائياً. حاول مرة أخرى؛ إذا تكرر الخطأ فتحقق من سجل دالة format-summary في Supabase.';
+    return jsonResponse({ error: errorMessage, groqFinishReason: finishReason }, 502, responseOrigin);
   }
   if (formattedText.length > 50000) {
-    return jsonResponse({ error: 'Gemini returned unexpectedly long output.' }, 502, responseOrigin);
+    return jsonResponse({ error: 'أعادت Groq نصاً أطول من المتوقع.' }, 502, responseOrigin);
   }
 
   return jsonResponse({ text: formattedText }, 200, responseOrigin);

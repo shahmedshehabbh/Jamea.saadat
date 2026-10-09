@@ -232,6 +232,10 @@ function makeCard(x) {
     if (ytThumb) img = ytThumb;
   }
   img = img || 'https://images.unsplash.com/photo-1481627834876-b7833e8f5570?auto=format&fit=crop&w=800&q=80';
+  const description = Array.from(String(x.desc || '').trim());
+  const cardDescription = description.length > 350
+    ? `${description.slice(0, 349).join('').trimEnd()}…`
+    : description.join('');
   
   return `
   <article class="card">
@@ -243,7 +247,7 @@ function makeCard(x) {
     <div class="card-body">
       <h3>${x.title}</h3>
       <div class="meta">${x.speaker} · ${x.date}</div>
-      <p class="desc">${x.desc}</p>
+      <p class="desc">${cardDescription}</p>
       <div class="card-foot">
         <a class="watch" href="#lecture/${x.id}" data-detail="${x.id}" data-viewmode="${currentFilter}">عرض المحاضرة ←</a>
       </div>
@@ -271,7 +275,6 @@ async function copyLectureLink(id) {
 // ── تحديث الإحصائيات ──
 function updateStats() {
   const L = getLectures();
-  const speakers = [...new Set(getLectures().filter(l => l.speaker === 'الشيخ أحمد الشهابي').map(l => l.speaker))].length;
   // أي مادة تحتوي على رابط يوتيوب/فيديو تُحسب تلقائياً في المرئيات
   const videos   = L.filter(l => l.type === 'مرئية' || Boolean(l.videoUrl)).length;
   // أي مادة تحتوي على رابط ساوندكلاود/صوت تُحسب تلقائياً في الصوتيات
@@ -281,7 +284,6 @@ function updateStats() {
   if ($('statTotal'))    $('statTotal').textContent    = toAr(L.length);
   if ($('statVideo'))    $('statVideo').textContent    = toAr(videos);
   if ($('statAudio'))    $('statAudio').textContent    = toAr(audios);
-  if ($('statSpeakers')) $('statSpeakers').textContent = toAr(speakers);
 }
 
 // ── آخر المحاضرات ──
@@ -289,6 +291,7 @@ function renderLatest() {
   const el = document.getElementById('latestCards');
   if (!el) return;
   el.innerHTML = getLectures().slice(0, 3).map(makeCard).join('');
+  staggerRevealCards(el);
 }
 
 // ── قاعدة بيانات المشايخ والعلماء (Speakers Directory) ──
@@ -431,7 +434,6 @@ function renderArchive() {
   const L    = getLectures();
   const q    = (document.querySelector('#archiveSearch input')?.value || '').toLowerCase();
   const type = document.getElementById('typeFilter')?.value || '';
-  const cat  = document.getElementById('categoryFilter')?.value || '';
   const sort = document.getElementById('sortFilter')?.value || 'newest';
 
   let found = L.filter(x => {
@@ -457,7 +459,7 @@ function renderArchive() {
       matchesType = x.type === type;
     }
 
-    return (!q || text.includes(normalizeSearchText(q))) && matchesType && (!cat || x.category.includes(cat));
+    return (!q || text.includes(normalizeSearchText(q))) && matchesType;
   });
 
   if (sort === 'oldest') found = [...found].reverse();
@@ -478,6 +480,7 @@ function renderArchive() {
            <div class="icon">🔍</div><h3>لم نجد مواد مطابقة</h3>
            <p>جرّب بحثاً مختلفاً أو غيّر الفلاتر</p>
          </div>`;
+    if (slice.length) staggerRevealCards(ac);
   }
 
   const pg = document.getElementById('pagination');
@@ -522,6 +525,62 @@ function getSoundCloudEmbed(url) {
   return `<audio controls src="${url}" style="width:100%"></audio>`;
 }
 
+function printLectureSummary(id) {
+  const lecture = getLectures().find(item => item.id === Number(id));
+  if (!lecture) {
+    showToast('تعذر العثور على ملخص المحاضرة.', 5000);
+    return;
+  }
+
+  const summary = lecture.summary || lecture.desc || '';
+  if (!summary.trim()) {
+    showToast('لا يوجد ملخص متاح لهذه المحاضرة.', 5000);
+    return;
+  }
+
+  const printWindow = window.open('', '_blank');
+  if (!printWindow) {
+    showToast('تعذر فتح نافذة الملخص. اسمح بالنوافذ المنبثقة ثم حاول مرة أخرى.', 6000);
+    return;
+  }
+
+  printWindow.opener = null;
+  printWindow.document.open();
+  printWindow.document.write(`<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>${escapeHtmlAttribute(lecture.title)} - ملخص المحاضرة</title>
+  <style>
+    body { max-width: 820px; margin: 40px auto; padding: 0 28px; color: #17312b; font: 16px/1.9 Arial, sans-serif; direction: rtl; }
+    h1 { margin: 0 0 8px; color: #0c4a3c; font-size: 26px; }
+    .meta { margin: 0 0 28px; color: #67756f; font-size: 13px; }
+    h2, h3 { color: #0c4a3c; }
+    blockquote { margin: 18px 0; padding: 10px 16px; border-right: 3px solid #c69b52; background: #f2f6f2; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 8px 10px; border: 1px solid #dfe5dd; text-align: right; }
+    th { background: #e9f0e9; }
+    img { max-width: 100%; }
+    a { color: #176650; overflow-wrap: anywhere; }
+    @page { size: A4; margin: 18mm; }
+    @media print { body { max-width: none; margin: 0; padding: 0; } }
+  </style>
+</head>
+<body>
+  <h1>${escapeHtmlAttribute(lecture.title)}</h1>
+  <p class="meta">${escapeHtmlAttribute([lecture.speaker, lecture.date].filter(Boolean).join(' · '))}</p>
+  <main>${parseMarkdown(summary)}</main>
+</body>
+</html>`);
+  printWindow.document.close();
+
+  window.setTimeout(() => {
+    printWindow.focus();
+    printWindow.print();
+  }, 300);
+}
+
 // ── دالة تحليل وتنسيق الملخص (Markdown & Tables Parser) ──
 function escapeHtmlAttribute(value) {
   return String(value).replace(/[&<>"']/g, char => ({
@@ -561,6 +620,11 @@ function getMarkdownImageUrl(value) {
 
 function parseMarkdown(text) {
   if (!text) return '';
+  text = text
+    .replace(/<br\s*\/?>/gi, '\u0000')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/\u0000/g, '<br>');
   
   // تحويل الجداول بنمط Markdown
   const lines = text.split('\n');
@@ -582,7 +646,7 @@ function parseMarkdown(text) {
 
       if (!inTable) {
         inTable = true;
-        tableHtml = '<div class="table-wrapper"><table class="detail-table"><thead><tr>';
+        tableHtml = '<div class="table-wrapper" dir="rtl"><table class="detail-table" dir="rtl"><thead><tr>';
         cells.forEach(c => { tableHtml += `<th>${c}</th>`; });
         tableHtml += '</tr></thead><tbody>';
       } else {
@@ -662,6 +726,90 @@ function updateSummaryPreview() {
     : '<span class="hint">ستظهر المعاينة هنا أثناء الكتابة.</span>';
 }
 
+function pastedInlineMarkdown(node) {
+  if (node.nodeType === Node.TEXT_NODE) return node.nodeValue || '';
+  if (!(node instanceof Element)) return '';
+  if (node.tagName === 'BR') return '\n';
+
+  const content = Array.from(node.childNodes).map(pastedInlineMarkdown).join('');
+  if (node.tagName === 'B' || node.tagName === 'STRONG') return `**${content}**`;
+  if (node.tagName === 'I' || node.tagName === 'EM') return `*${content}*`;
+  if (node.tagName === 'A') {
+    const url = getSafeMarkdownUrl(node.getAttribute('href') || '');
+    return url ? `[${content}](${url.replace(/\)/g, '%29')})` : content;
+  }
+  return content;
+}
+
+function pastedTableMarkdown(table) {
+  const rows = Array.from(table.rows).map(row =>
+    Array.from(row.cells).map(cell =>
+      pastedInlineMarkdown(cell).trim().replace(/\n+/g, '<br>').replace(/\|/g, '&#124;')
+    )
+  ).filter(row => row.length);
+  if (!rows.length) return '';
+
+  const header = rows[0];
+  const separator = header.map(() => '---');
+  return [header, separator, ...rows.slice(1)]
+    .map(row => `| ${row.join(' | ')} |`)
+    .join('\n');
+}
+
+function pastedHtmlToMarkdown(html) {
+  const documentCopy = new DOMParser().parseFromString(html, 'text/html');
+  const blockTags = new Set(['DIV', 'P', 'H1', 'H2', 'H3', 'H4', 'UL', 'OL', 'TABLE', 'BLOCKQUOTE']);
+
+  function renderBlock(node) {
+    if (node.nodeType === Node.TEXT_NODE) return node.nodeValue || '';
+    if (!(node instanceof Element)) return '';
+    if (node.tagName === 'TABLE') return `${pastedTableMarkdown(node)}\n\n`;
+    if (node.tagName === 'UL' || node.tagName === 'OL') {
+      const items = Array.from(node.children).filter(child => child.tagName === 'LI');
+      return `${items.map((item, index) => {
+        const marker = node.tagName === 'OL' ? `${index + 1}.` : '-';
+        return `${marker} ${pastedInlineMarkdown(item).trim()}`;
+      }).join('\n')}\n\n`;
+    }
+    if (node.tagName === 'BLOCKQUOTE') {
+      return `${pastedInlineMarkdown(node).trim().split('\n').map(line => `> ${line}`).join('\n')}\n\n`;
+    }
+    if (node.tagName === 'DIV' && Array.from(node.children).some(child => blockTags.has(child.tagName))) {
+      return Array.from(node.childNodes).map(renderBlock).join('');
+    }
+    if (/^H[1-4]$/.test(node.tagName)) return `## ${pastedInlineMarkdown(node).trim()}\n\n`;
+    if (node.tagName === 'P' || node.tagName === 'DIV') {
+      return `${pastedInlineMarkdown(node).trim()}\n\n`;
+    }
+    return pastedInlineMarkdown(node);
+  }
+
+  return Array.from(documentCopy.body.childNodes)
+    .map(renderBlock)
+    .join('')
+    .replace(/\r/g, '')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
+async function getSummaryFormatErrorMessage(error) {
+  if (!error || typeof error !== 'object') return String(error);
+
+  if (error.name === 'FunctionsHttpError' && error.context instanceof Response) {
+    try {
+      const responseBody = await error.context.clone().json();
+      if (responseBody && typeof responseBody.error === 'string') return responseBody.error;
+    } catch {
+      // The Edge Function may return a non-JSON error response.
+    }
+  }
+
+  if (error.name === 'FunctionsFetchError' || error.name === 'FunctionsRelayError') {
+    return 'تعذر الاتصال بدالة format-summary. تأكد من نشرها على مشروع Supabase المحدد في config.js (spxafptqlfojwzgeepjq)، ثم تحقق من السماح بنطاق الموقع في allowedOrigins ومن اتصال الإنترنت.';
+  }
+  return typeof error.message === 'string' ? error.message : String(error);
+}
+
 function replaceSummarySelection(textarea, value, selectionStart, selectionEnd) {
   const start = textarea.selectionStart;
   textarea.setRangeText(value, start, textarea.selectionEnd, 'end');
@@ -713,14 +861,14 @@ function autoFormatSummary(text) {
   return output.join('\n').replace(/\n{3,}/g, '\n\n').trim();
 }
 
-async function improveSummaryWithGemini(button) {
+async function improveSummaryWithAI(button) {
   const textarea = document.getElementById('fSummary');
   if (!textarea || !supabaseClient) {
-    showToast('يلزم إعداد Supabase قبل استخدام Gemini.', 5000);
+    showToast('يلزم إعداد Supabase قبل استخدام التحسين بالذكاء الاصطناعي.', 5000);
     return;
   }
   if (!isAdminAuthenticated()) {
-    showToast('سجّل الدخول بحساب المشرف لاستخدام Gemini.', 5000);
+    showToast('سجّل الدخول بحساب المشرف لاستخدام التحسين بالذكاء الاصطناعي.', 5000);
     return;
   }
   if (!textarea.value.trim()) {
@@ -738,14 +886,14 @@ async function improveSummaryWithGemini(button) {
     });
     if (error) throw error;
     if (!data || typeof data.text !== 'string' || !data.text.trim()) {
-      throw new Error('لم تُرجع خدمة Gemini نصاً صالحاً.');
+      throw new Error('لم تُرجع خدمة التنسيق نصاً صالحاً.');
     }
     textarea.value = data.text.trim();
     textarea.dispatchEvent(new Event('input', { bubbles: true }));
-    showToast('تم ترتيب النص بواسطة Gemini. راجع المعلومات ثم احفظ التغييرات.');
+    showToast('تم ترتيب النص بالذكاء الاصطناعي. راجع المعلومات ثم احفظ التغييرات.');
   } catch (error) {
-    console.error('Gemini summary formatting failed:', error);
-    showToast(`تعذر تحسين الملخص: ${error.message}`, 7000);
+    console.error('AI summary formatting failed:', error);
+    showToast(`تعذر تحسين الملخص: ${await getSummaryFormatErrorMessage(error)}`, 7000);
   } finally {
     button.disabled = false;
     button.textContent = originalLabel;
@@ -840,10 +988,22 @@ function showDetail(id, viewMode = '') {
   $('#detailCategory').textContent = x.category;
   $('#detailMeta').textContent     = `${x.speaker} · ${x.date} · ${effectiveType} · ${x.duration}`;
   
-  // عرض الملخص بتنسيق غني وجداول
-  const summaryContent = x.summary || x.desc || '';
+  const mediaSectionView = viewMode === 'مرئية' || viewMode === 'صوتية';
+  const descriptionHeading = document.getElementById('detailDescriptionHeading');
+  const descriptionEl = document.getElementById('detailDescription');
+  if (descriptionHeading) descriptionHeading.hidden = !x.desc;
+  if (descriptionEl) {
+    descriptionEl.hidden = !x.desc;
+    descriptionEl.innerHTML = x.desc ? parseMarkdown(x.desc) : '';
+  }
+
+  // تعرض أقسام المرئيات والصوتيات الوصف والنقاط فقط؛ ويظهر الوصف قبل الملخص في عرض الدرس الكامل.
+  const summaryHeading = document.getElementById('detailSummaryHeading');
   const summaryEl = document.getElementById('detailSummary');
+  const summaryContent = mediaSectionView ? '' : (x.summary || '');
+  if (summaryHeading) summaryHeading.hidden = !summaryContent;
   if (summaryEl) {
+    summaryEl.hidden = !summaryContent;
     summaryEl.innerHTML = parseMarkdown(summaryContent);
   }
 
@@ -926,6 +1086,7 @@ function showDetail(id, viewMode = '') {
       </a>`;
   }
 
+  actions.innerHTML += `<button type="button" class="btn-action-link btn-action-pdf" data-download-summary="${x.id}" title="طباعة الملخص أو حفظه بصيغة PDF">⬇️ <span>تنزيل الملخص PDF</span></button>`;
   actions.innerHTML += `<button type="button" class="btn-outline admin-only" style="border-color:var(--gold);color:var(--gold);cursor:pointer;" onclick="copyLectureLink(${x.id})">📋 نسخ الرابط</button>`;
   actions.innerHTML += `<button type="button" class="btn-outline admin-only" style="border-color:var(--gold);color:var(--gold);cursor:pointer;" onclick="editLecture(${x.id})">✏️ تعديل المادة</button>`;
   actions.innerHTML += `<button type="button" class="btn-outline admin-only" style="border-color:#e53e3e;color:#e53e3e;cursor:pointer;" onclick="deleteLecture(${x.id})">🗑️ حذف</button>`;
@@ -970,6 +1131,8 @@ function handleHashChange() {
     view = 'speakers-page';
   } else if (hash === 'about-page') {
     view = 'about-page';
+  } else if (hash === 'questions-page') {
+    view = 'questions-page';
   } else if (hash === '' || hash === 'home') {
     view = 'home';
   }
@@ -1172,6 +1335,87 @@ function refreshLectureViews() {
   handleHashChange();
 }
 
+/* ============================================================
+   ✨ Modern Motion Engine — IntersectionObserver + nav + counters
+   ============================================================ */
+let revealObserver = null;
+let statsCounted = false;
+
+function initMotion() {
+  // Nav shrink on scroll
+  const nav = document.querySelector('.nav');
+  if (nav) {
+    const onScroll = () => nav.classList.toggle('scrolled', window.scrollY > 28);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+  }
+
+  // Respect reduced motion: skip observer
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    document.querySelectorAll('.reveal').forEach(el => el.classList.add('in'));
+    return;
+  }
+
+  // Reveal on scroll
+  revealObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('in');
+        // Count-up when stats-bar enters view
+        if (entry.target.classList.contains('stats-bar') && !statsCounted) {
+          statsCounted = true;
+          animateStats();
+        }
+        revealObserver.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.14, rootMargin: '0px 0px -40px 0px' });
+
+  document.querySelectorAll('.reveal').forEach(el => revealObserver.observe(el));
+}
+
+function observeNewReveals(root = document) {
+  if (!revealObserver) return;
+  root.querySelectorAll('.reveal:not(.in)').forEach(el => revealObserver.observe(el));
+}
+
+function animateStats() {
+  const ids = ['statTotal', 'statVideo', 'statAudio'];
+  ids.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const target = parseInt((el.textContent || '0').replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d)), 10);
+    if (isNaN(target) || target === 0) { el.classList.add('counting'); return; }
+    let cur = 0;
+    const dur = 900;
+    const t0 = performance.now();
+    const step = (now) => {
+      const p = Math.min(1, (now - t0) / dur);
+      const eased = 1 - Math.pow(1 - p, 3);
+      cur = Math.round(eased * target);
+      el.textContent = toAr(cur);
+      if (p < 1) requestAnimationFrame(step);
+      else { el.textContent = toAr(target); el.classList.add('counting'); setTimeout(() => el.classList.remove('counting'), 600); }
+    };
+    requestAnimationFrame(step);
+  });
+}
+
+function staggerRevealCards(container) {
+  if (!container) return;
+  const cards = container.querySelectorAll('.card');
+  cards.forEach((card, i) => {
+    card.classList.add('reveal');
+    card.style.transitionDelay = (i * 0.07) + 's';
+  });
+  // allow transitionDelay to apply, then observe
+  requestAnimationFrame(() => observeNewReveals(container));
+  // reveal cards sequentially even if already in view
+  setTimeout(() => {
+    cards.forEach((c, i) => setTimeout(() => c.classList.add('in'), i * 70));
+  }, 80);
+}
+
 function closeAdmin() { 
   console.log('✅ closeAdmin() called');
   const overlay = document.getElementById('adminOverlay');
@@ -1234,8 +1478,27 @@ function initializeApp() {
   const summaryInput = document.getElementById('fSummary');
   const formatToolbar = document.querySelector('.format-toolbar');
   const insertSummaryImageButton = document.getElementById('insertSummaryImage');
-  const geminiFormatButton = document.getElementById('formatWithGemini');
-  if (summaryInput) summaryInput.addEventListener('input', updateSummaryPreview);
+  const aiFormatButton = document.getElementById('formatWithAI');
+  if (summaryInput) {
+    summaryInput.addEventListener('input', updateSummaryPreview);
+    summaryInput.addEventListener('paste', event => {
+      const html = event.clipboardData && event.clipboardData.getData('text/html');
+      if (!html) return;
+      const markdown = pastedHtmlToMarkdown(html);
+      if (!markdown) return;
+
+      event.preventDefault();
+      const start = summaryInput.selectionStart;
+      const end = summaryInput.selectionEnd;
+      const before = summaryInput.value.slice(0, start);
+      const after = summaryInput.value.slice(end);
+      const needsBlockSpacing = markdown.includes('\n');
+      const prefix = needsBlockSpacing && before && !before.endsWith('\n') ? '\n\n' : '';
+      const suffix = needsBlockSpacing && after && !after.startsWith('\n') ? '\n\n' : '';
+      summaryInput.setRangeText(`${prefix}${markdown}${suffix}`, start, end, 'end');
+      summaryInput.dispatchEvent(new Event('input', { bubbles: true }));
+    });
+  }
   if (formatToolbar && summaryInput) {
     formatToolbar.addEventListener('click', event => {
       const button = event.target.closest('[data-format]');
@@ -1267,8 +1530,8 @@ function initializeApp() {
       altInput.value = '';
     });
   }
-  if (geminiFormatButton) {
-    geminiFormatButton.addEventListener('click', () => improveSummaryWithGemini(geminiFormatButton));
+  if (aiFormatButton) {
+    aiFormatButton.addEventListener('click', () => improveSummaryWithAI(aiFormatButton));
   }
   document.addEventListener('error', event => {
     const image = event.target;
@@ -1334,6 +1597,33 @@ function initializeApp() {
 
   // Event Delegation
   document.addEventListener('click', e => {
+    const shareToggle = e.target.closest('[data-share-toggle]');
+    const shareWidget = e.target.closest('.share-widget');
+    const shareMenu = document.getElementById('shareMenu');
+    if (shareToggle) {
+      const opening = shareToggle.getAttribute('aria-expanded') !== 'true';
+      if (opening) {
+        const pageUrl = window.location.href;
+        const pageTitle = document.querySelector('.section-page.active h1, .section-page.active h2')?.innerText.trim().replace(/\s+/g, ' ')
+          || document.querySelector('.home:not(.hidden) h1')?.innerText.trim().replace(/\s+/g, ' ')
+          || document.title;
+        const whatsappLink = document.querySelector('[data-share-link="whatsapp"]');
+        const twitterLink = document.querySelector('[data-share-link="twitter"]');
+        if (whatsappLink) whatsappLink.href = `https://wa.me/?text=${encodeURIComponent(`${pageTitle} ${pageUrl}`)}`;
+        if (twitterLink) twitterLink.href = `https://twitter.com/intent/tweet?text=${encodeURIComponent(pageTitle)}&url=${encodeURIComponent(pageUrl)}`;
+      }
+      shareToggle.setAttribute('aria-expanded', String(opening));
+      if (shareMenu) shareMenu.hidden = !opening;
+      return;
+    }
+    if (shareMenu && !shareWidget) {
+      shareMenu.hidden = true;
+      document.getElementById('shareToggle')?.setAttribute('aria-expanded', 'false');
+    } else if (e.target.closest('[data-share-link]')) {
+      if (shareMenu) shareMenu.hidden = true;
+      document.getElementById('shareToggle')?.setAttribute('aria-expanded', 'false');
+    }
+
     const detailBtn = e.target.closest('[data-detail]');
     if (detailBtn) { 
       e.preventDefault(); 
@@ -1343,6 +1633,12 @@ function initializeApp() {
       if (window.location.hash === hash) showDetail(id, viewMode);
       else window.location.hash = hash;
       return; 
+    }
+    const summaryPdfButton = e.target.closest('[data-download-summary]');
+    if (summaryPdfButton) {
+      e.preventDefault();
+      printLectureSummary(summaryPdfButton.dataset.downloadSummary);
+      return;
     }
     const pageLink = e.target.closest('[data-page]');
     if (pageLink) { e.preventDefault(); navigateToHash(pageLink.dataset.page); return; }
@@ -1363,12 +1659,20 @@ function initializeApp() {
     const adminLogin = e.target.closest('[data-admin-login]');
     if (adminLogin) { e.preventDefault(); toggleAdminSession(); return; }
   });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+      const shareMenu = document.getElementById('shareMenu');
+      if (shareMenu) shareMenu.hidden = true;
+      const shareToggle = document.querySelector('[data-share-toggle]');
+      shareToggle?.setAttribute('aria-expanded', 'false');
+      shareToggle?.focus();
+    }
+  });
 
   // ربط عناصر البحث والفلاتر
   const heroSearch = document.getElementById('heroSearch');
   const archiveSearch = document.getElementById('archiveSearch');
   const typeFilter = document.getElementById('typeFilter');
-  const categoryFilter = document.getElementById('categoryFilter');
   const sortFilter = document.getElementById('sortFilter');
   const menuBtn = document.getElementById('menuBtn');
   const closeMenu = document.getElementById('closeMenu');
@@ -1393,7 +1697,6 @@ function initializeApp() {
       ? `archive?type=${encodeURIComponent(typeFilter.value)}`
       : 'archive');
   });
-  if (categoryFilter) categoryFilter.addEventListener('change', () => { currentPage = 1; renderArchive(); });
   if (sortFilter) sortFilter.addEventListener('change', () => { currentPage = 1; renderArchive(); });
 
   if (menuBtn) {
@@ -1415,6 +1718,9 @@ function initializeApp() {
       }
     });
   }
+
+  // ── Motion init (nav, reveal, counters) ──
+  initMotion();
 
   // ── التهيئة ──
   lectures = [];

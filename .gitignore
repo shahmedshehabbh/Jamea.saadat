@@ -12,6 +12,10 @@ quick-test.html
 *.md
 !README.md
 !README-AR.md
+!tools/lecture-drafts/README-AR.md
+
+# Locally generated lecture drafts (never publish these automatically)
+tools/lecture-drafts/drafts/
 
 # Local Supabase credentials (use config.example.js as a template)
 config.js
