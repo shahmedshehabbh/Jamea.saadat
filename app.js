@@ -291,6 +291,7 @@ function renderLatest() {
   const el = document.getElementById('latestCards');
   if (!el) return;
   el.innerHTML = getLectures().slice(0, 3).map(makeCard).join('');
+  staggerRevealCards(el);
 }
 
 // ── قاعدة بيانات المشايخ والعلماء (Speakers Directory) ──
@@ -479,6 +480,7 @@ function renderArchive() {
            <div class="icon">🔍</div><h3>لم نجد مواد مطابقة</h3>
            <p>جرّب بحثاً مختلفاً أو غيّر الفلاتر</p>
          </div>`;
+    if (slice.length) staggerRevealCards(ac);
   }
 
   const pg = document.getElementById('pagination');
@@ -1333,6 +1335,87 @@ function refreshLectureViews() {
   handleHashChange();
 }
 
+/* ============================================================
+   ✨ Modern Motion Engine — IntersectionObserver + nav + counters
+   ============================================================ */
+let revealObserver = null;
+let statsCounted = false;
+
+function initMotion() {
+  // Nav shrink on scroll
+  const nav = document.querySelector('.nav');
+  if (nav) {
+    const onScroll = () => nav.classList.toggle('scrolled', window.scrollY > 28);
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+  }
+
+  // Respect reduced motion: skip observer
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    document.querySelectorAll('.reveal').forEach(el => el.classList.add('in'));
+    return;
+  }
+
+  // Reveal on scroll
+  revealObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        entry.target.classList.add('in');
+        // Count-up when stats-bar enters view
+        if (entry.target.classList.contains('stats-bar') && !statsCounted) {
+          statsCounted = true;
+          animateStats();
+        }
+        revealObserver.unobserve(entry.target);
+      }
+    });
+  }, { threshold: 0.14, rootMargin: '0px 0px -40px 0px' });
+
+  document.querySelectorAll('.reveal').forEach(el => revealObserver.observe(el));
+}
+
+function observeNewReveals(root = document) {
+  if (!revealObserver) return;
+  root.querySelectorAll('.reveal:not(.in)').forEach(el => revealObserver.observe(el));
+}
+
+function animateStats() {
+  const ids = ['statTotal', 'statVideo', 'statAudio'];
+  ids.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const target = parseInt((el.textContent || '0').replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d)), 10);
+    if (isNaN(target) || target === 0) { el.classList.add('counting'); return; }
+    let cur = 0;
+    const dur = 900;
+    const t0 = performance.now();
+    const step = (now) => {
+      const p = Math.min(1, (now - t0) / dur);
+      const eased = 1 - Math.pow(1 - p, 3);
+      cur = Math.round(eased * target);
+      el.textContent = toAr(cur);
+      if (p < 1) requestAnimationFrame(step);
+      else { el.textContent = toAr(target); el.classList.add('counting'); setTimeout(() => el.classList.remove('counting'), 600); }
+    };
+    requestAnimationFrame(step);
+  });
+}
+
+function staggerRevealCards(container) {
+  if (!container) return;
+  const cards = container.querySelectorAll('.card');
+  cards.forEach((card, i) => {
+    card.classList.add('reveal');
+    card.style.transitionDelay = (i * 0.07) + 's';
+  });
+  // allow transitionDelay to apply, then observe
+  requestAnimationFrame(() => observeNewReveals(container));
+  // reveal cards sequentially even if already in view
+  setTimeout(() => {
+    cards.forEach((c, i) => setTimeout(() => c.classList.add('in'), i * 70));
+  }, 80);
+}
+
 function closeAdmin() { 
   console.log('✅ closeAdmin() called');
   const overlay = document.getElementById('adminOverlay');
@@ -1635,6 +1718,9 @@ function initializeApp() {
       }
     });
   }
+
+  // ── Motion init (nav, reveal, counters) ──
+  initMotion();
 
   // ── التهيئة ──
   lectures = [];

@@ -11,6 +11,18 @@ quick-test.html
 # Documentation files (optional - remove if you want to include them)
 *.md
 !README.md
+!README-AR.md
+!tools/lecture-drafts/README-AR.md
+
+# Locally generated lecture drafts (never publish these automatically)
+tools/lecture-drafts/drafts/
+__pycache__/
+*.pyc
+*.pyo
+
+# Local Supabase credentials (use config.example.js as a template)
+config.js
+supabase/functions/.env
 
 # System files
 .DS_Store
