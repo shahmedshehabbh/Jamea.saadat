@@ -599,6 +599,7 @@ function printLectureSummary(id) {
     return;
   }
 
+  const initialFontSize = document.getElementById('detail')?.classList.contains('large-reading-text') ? 20 : 18;
   printWindow.opener = null;
   printWindow.document.open();
   printWindow.document.write(`<!doctype html>
@@ -608,32 +609,70 @@ function printLectureSummary(id) {
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>${escapeHtmlAttribute(lecture.title)} - ملخص المحاضرة</title>
   <style>
-    body { max-width: 820px; margin: 40px auto; padding: 0 28px; color: #17312b; font: 16px/1.9 Arial, sans-serif; direction: rtl; }
-    h1 { margin: 0 0 8px; color: #0c4a3c; font-size: 26px; }
-    .meta { margin: 0 0 28px; color: #67756f; font-size: 13px; }
-    h2, h3 { color: #0c4a3c; }
-    blockquote { margin: 18px 0; padding: 10px 16px; border-right: 3px solid #c69b52; background: #f2f6f2; }
-    table { width: 100%; border-collapse: collapse; }
-    th, td { padding: 8px 10px; border: 1px solid #dfe5dd; text-align: right; }
+    body { --summary-font-size: ${initialFontSize}px; max-width: 900px; margin: 32px auto; padding: 0 32px; color: #26332d; font: var(--summary-font-size)/2 Arial, "Noto Naskh Arabic", sans-serif; direction: rtl; }
+    .toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 28px; padding: 12px; border: 1px solid #dfe5dd; border-radius: 10px; background: #f7f9f7; }
+    .toolbar button { min-height: 42px; padding: 8px 14px; border: 1px solid #cbd6ce; border-radius: 7px; background: #fff; color: #17312b; font: 700 15px Arial, sans-serif; cursor: pointer; }
+    .toolbar button:hover, .toolbar button:focus-visible { border-color: #176650; background: #e9f0e9; }
+    .toolbar .print-button { margin-right: auto; border-color: #0c4a3c; background: #0c4a3c; color: #fff; }
+    h1 { margin: 0 0 10px; color: #0c4a3c; font-size: 1.8em; line-height: 1.5; }
+    .meta { margin: 0 0 28px; padding-bottom: 16px; border-bottom: 2px solid #e9f0e9; color: #58675f; font-size: .85em; }
+    main { font-size: var(--summary-font-size); line-height: 2; }
+    main p { margin: 0 0 1em; }
+    h2, h3 { margin: 1.4em 0 .6em; color: #0c4a3c; line-height: 1.6; break-after: avoid; page-break-after: avoid; }
+    h3 { padding-right: 12px; border-right: 3px solid #c69b52; }
+    ul, ol { padding-right: 1.5em; }
+    li { margin-bottom: .35em; }
+    blockquote { margin: 1em 0; padding: .7em 1em; border-right: 4px solid #c69b52; background: #f2f6f2; break-inside: avoid; page-break-inside: avoid; }
+    .table-wrapper { overflow: visible; margin: 1.2em 0; }
+    table { width: 100%; border-collapse: collapse; font-size: .9em; }
+    th, td { padding: 9px 11px; border: 1px solid #dfe5dd; text-align: right; }
     th { background: #e9f0e9; }
+    tr, figure { break-inside: avoid; page-break-inside: avoid; }
+    figure { margin: 1em 0; text-align: center; }
+    figcaption { margin-top: .4em; color: #58675f; font-size: .85em; }
     img { max-width: 100%; }
     a { color: #176650; overflow-wrap: anywhere; }
-    @page { size: A4; margin: 18mm; }
-    @media print { body { max-width: none; margin: 0; padding: 0; } }
+    @page { size: A4; margin: 16mm; }
+    @media print {
+      .toolbar { display: none; }
+      body { max-width: none; margin: 0; padding: 0; color: #000; }
+      h1, h2, h3, a { color: #000; }
+      th, blockquote { print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+    }
   </style>
 </head>
 <body>
+  <div class="toolbar" role="group" aria-label="خيارات الطباعة">
+    <button type="button" data-font-adjust="-1" aria-label="تصغير حجم النص">A− تصغير الخط</button>
+    <button type="button" data-font-reset>الحجم الافتراضي</button>
+    <button type="button" data-font-adjust="1" aria-label="تكبير حجم النص">A+ تكبير الخط</button>
+    <button type="button" class="print-button" id="printSummary">🖨️ طباعة / حفظ PDF</button>
+  </div>
   <h1>${escapeHtmlAttribute(lecture.title)}</h1>
   <p class="meta">${escapeHtmlAttribute([lecture.speaker, lecture.date].filter(Boolean).join(' · '))}</p>
   <main>${parseMarkdown(summary)}</main>
+  <script>
+    (() => {
+      const body = document.body;
+      const defaultSize = ${initialFontSize};
+      let fontSize = defaultSize;
+      document.querySelectorAll('[data-font-adjust]').forEach(button => {
+        button.addEventListener('click', () => {
+          fontSize = Math.min(26, Math.max(16, fontSize + Number(button.dataset.fontAdjust)));
+          body.style.setProperty('--summary-font-size', fontSize + 'px');
+        });
+      });
+      document.querySelector('[data-font-reset]').addEventListener('click', () => {
+        fontSize = defaultSize;
+        body.style.setProperty('--summary-font-size', fontSize + 'px');
+      });
+      document.getElementById('printSummary').addEventListener('click', () => window.print());
+    })();
+  </script>
 </body>
 </html>`);
   printWindow.document.close();
-
-  window.setTimeout(() => {
-    printWindow.focus();
-    printWindow.print();
-  }, 300);
+  printWindow.focus();
 }
 
 // ── دالة تحليل وتنسيق الملخص (Markdown & Tables Parser) ──
