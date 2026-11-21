@@ -1562,11 +1562,8 @@ function initializeApp() {
   // ربط زر تسجيل دخول المشرف في القائمة يتم عبر Event Delegation
   updateAdminUI();
 
-  if (adminOverlay) {
-    adminOverlay.addEventListener('click', e => {
-      if (e.target === e.currentTarget) closeAdmin();
-    });
-  }
+  // Admin modal closes only via ✕ / cancel / save — clicking the backdrop
+  // must not close it, otherwise unsaved form data is lost on reopen.
 
   // Admin Form
   const adminForm = document.getElementById('adminForm');
